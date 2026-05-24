@@ -1,6 +1,7 @@
 import { clamp } from "../../core/utils";
 import type { Vector2 } from "../../core/types/vector";
 import { BASE_CONSTANTS, TERRAIN_COLORS } from "./constants";
+import { drawPixelPlayer, drawPixelScene } from "./art";
 import { isWalkableTile, getTileKind } from "./terrain";
 import type { BaseState, BaseStatusSnapshot, MinimapLayout, SceneId } from "./types";
 
@@ -132,50 +133,47 @@ export function drawSceneBackgroundAndGrid(renderCtx: CanvasRenderingContext2D, 
   );
 
   renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
-  if (state.sceneTerrains[state.currentSceneId]) {
-    renderCtx.fillStyle = TERRAIN_COLORS.water;
-    renderCtx.fillRect(0, 0, state.camera.width, state.camera.height);
-
-    for (let y = startRow; y <= endRow; y += 1) {
-      for (let x = startCol; x <= endCol; x += 1) {
-        const tileKind = getTileKind(state.sceneTerrains, state.currentSceneId, x, y);
-        if (tileKind === "water") {
-          continue;
-        }
-
-        const screenX = x * BASE_CONSTANTS.TILE_SIZE - state.camera.x;
-        const screenY = y * BASE_CONSTANTS.TILE_SIZE - state.camera.y;
-        renderCtx.fillStyle = TERRAIN_COLORS[tileKind];
-        renderCtx.fillRect(screenX, screenY, BASE_CONSTANTS.TILE_SIZE, BASE_CONSTANTS.TILE_SIZE);
-      }
-    }
-  } else {
-    renderCtx.fillStyle = scene.background;
-    renderCtx.fillRect(0, 0, state.camera.width, state.camera.height);
-  }
-
-  renderCtx.strokeStyle = "rgba(255, 255, 255, 0.12)";
-  for (let y = startRow; y <= endRow; y += 1) {
-    for (let x = startCol; x <= endCol; x += 1) {
-      const screenX = x * BASE_CONSTANTS.TILE_SIZE - state.camera.x;
-      const screenY = y * BASE_CONSTANTS.TILE_SIZE - state.camera.y;
-      renderCtx.strokeRect(screenX, screenY, BASE_CONSTANTS.TILE_SIZE, BASE_CONSTANTS.TILE_SIZE);
-    }
-  }
+  drawPixelScene(renderCtx, state);
 
   renderCtx.strokeStyle = "rgba(0, 0, 0, 0.35)";
   renderCtx.strokeRect(-state.camera.x, -state.camera.y, worldWidthPx, worldHeightPx);
 }
 
-export function drawPlayer(renderCtx: CanvasRenderingContext2D, state: BaseState): void {
-  const half = state.player.size / 2;
-  const screenX = state.player.x - state.camera.x - half;
-  const screenY = state.player.y - state.camera.y - half;
+export function drawCollisionDebugBoxes(renderCtx: CanvasRenderingContext2D, state: BaseState, debugMode: boolean): void {
+  if (!debugMode || state.currentSceneId !== "shop") {
+    return;
+  }
 
-  renderCtx.fillStyle = state.player.color;
-  renderCtx.fillRect(screenX, screenY, state.player.size, state.player.size);
-  renderCtx.strokeStyle = "#f0c808";
-  renderCtx.strokeRect(screenX, screenY, state.player.size, state.player.size);
+  const scene = state.scenes[state.currentSceneId];
+  const tile = BASE_CONSTANTS.TILE_SIZE;
+  const startCol = Math.max(0, Math.floor(state.camera.x / tile));
+  const endCol = Math.min(scene.worldCols - 1, Math.ceil((state.camera.x + state.camera.width) / tile) - 1);
+  const startRow = Math.max(0, Math.floor(state.camera.y / tile));
+  const endRow = Math.min(scene.worldRows - 1, Math.ceil((state.camera.y + state.camera.height) / tile) - 1);
+
+  renderCtx.save();
+  renderCtx.fillStyle = "rgba(255, 81, 81, 0.18)";
+  renderCtx.strokeStyle = "rgba(255, 112, 112, 0.95)";
+  renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
+
+  for (let y = startRow; y <= endRow; y += 1) {
+    for (let x = startCol; x <= endCol; x += 1) {
+      if (isWalkableTile(state.sceneTerrains, state.currentSceneId, x, y)) {
+        continue;
+      }
+
+      const screenX = x * tile - state.camera.x;
+      const screenY = y * tile - state.camera.y;
+      renderCtx.fillRect(screenX, screenY, tile, tile);
+      renderCtx.strokeRect(screenX, screenY, tile, tile);
+    }
+  }
+
+  renderCtx.restore();
+}
+
+export function drawPlayer(renderCtx: CanvasRenderingContext2D, state: BaseState): void {
+  drawPixelPlayer(renderCtx, state);
 }
 
 export function drawMiniMap(renderCtx: CanvasRenderingContext2D, state: BaseState): void {

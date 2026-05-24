@@ -158,13 +158,20 @@ function updateFishingBiteWindow(state: FishingState, dt: number, getRodOriginWo
 }
 
 function beginReelingPhase(state: FishingState): void {
+  const zoneWidth = randomBetween(FISHING_CONSTANTS.GREEN_ZONE_WIDTH_MIN, FISHING_CONSTANTS.GREEN_ZONE_WIDTH_MAX);
+  const zoneStartMin = FISHING_CONSTANTS.GREEN_ZONE_EDGE_PADDING;
+  const zoneStartMax = 1 - FISHING_CONSTANTS.GREEN_ZONE_EDGE_PADDING - zoneWidth;
+  const zoneStart = randomBetween(zoneStartMin, Math.max(zoneStartMin, zoneStartMax));
+
   state.session.phase = "reeling";
   state.session.waveTimer = 0;
   state.session.fishPullTimer = 0;
   state.session.burstStrength = 0;
   state.session.tension = 0.1;
+  state.session.greenZoneStart = zoneStart;
+  state.session.greenZoneEnd = clamp(zoneStart + zoneWidth, 0, 1);
   state.session.catchProgress = 0;
-  state.session.statusText = "Hold mouse to reel. Keep tension out of red.";
+  state.session.statusText = "Hold mouse to reel. Keep the marker in green.";
 }
 
 function updateFishingReeling(state: FishingState, dt: number, dependencies: FishingUpdateDependencies): void {
@@ -190,10 +197,13 @@ function updateFishingReeling(state: FishingState, dt: number, dependencies: Fis
     return;
   }
 
-  const tensionPenalty = clamp(state.session.tension * 0.62, 0, 0.72);
-  const progressDelta = state.isReelHeld
-    ? FISHING_CONSTANTS.PROGRESS_GAIN * (1 - tensionPenalty)
-    : -FISHING_CONSTANTS.PROGRESS_DECAY;
+  const tensionRatio = clamp(state.session.tension / FISHING_CONSTANTS.TENSION_SNAP, 0, 1);
+  const inGreenZone = tensionRatio >= state.session.greenZoneStart && tensionRatio <= state.session.greenZoneEnd;
+  const progressDelta = inGreenZone
+    ? state.isReelHeld
+      ? FISHING_CONSTANTS.PROGRESS_GAIN_IN_GREEN
+      : -FISHING_CONSTANTS.PROGRESS_DECAY_IDLE
+    : -FISHING_CONSTANTS.PROGRESS_LOSS_IN_RED;
   state.session.catchProgress = clamp(
     state.session.catchProgress + progressDelta * dt,
     0,
@@ -360,10 +370,12 @@ function drawFishingTensionBar(renderCtx: CanvasRenderingContext2D, state: Fishi
     barHeight + Math.max(1, Math.round(36 * BASE_CONSTANTS.GLOBAL_SCALE)),
   );
 
-  renderCtx.fillStyle = "#29b46f";
-  renderCtx.fillRect(x, y, barWidth * 0.78, barHeight);
   renderCtx.fillStyle = "#cf5252";
-  renderCtx.fillRect(x + barWidth * 0.78, y, barWidth * 0.22, barHeight);
+  renderCtx.fillRect(x, y, barWidth, barHeight);
+  const greenZoneX = x + barWidth * state.session.greenZoneStart;
+  const greenZoneWidth = barWidth * (state.session.greenZoneEnd - state.session.greenZoneStart);
+  renderCtx.fillStyle = "#29b46f";
+  renderCtx.fillRect(greenZoneX, y, greenZoneWidth, barHeight);
   renderCtx.strokeStyle = "rgba(245, 250, 255, 0.9)";
   renderCtx.strokeRect(x, y, barWidth, barHeight);
 

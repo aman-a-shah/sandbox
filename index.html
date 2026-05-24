@@ -18,11 +18,12 @@
         aria-expanded="false"
         aria-label="Open backpack inventory"
       >
-        <span class="inventory-toggle-icon" aria-hidden="true">&#127890;</span>
+        <span class="inventory-toggle-icon" aria-hidden="true"></span>
       </button>
       <p class="controls-overlay">
-        WASD / Arrow keys move • Island dock: click to open ocean chart • Click chart to pick a habitat route • Shop
-        workstation: press E • Ocean fishing: click water to cast, click bobber on bite, hold mouse to reel
+        WASD / Arrow keys move • Island dock: stand on dock + press E to open ocean chart • Ocean chart: click the sea
+        zone to sail (regions are hidden) • Shop workstation: press E • Ocean fishing: click water to cast, click bobber on bite,
+        hold mouse to reel
       </p>
       <p id="workstation-prompt" class="workstation-prompt is-hidden">Press E to open workstation</p>
       <p id="craft-toast" class="craft-toast is-hidden" aria-live="polite"></p>
@@ -55,7 +56,7 @@
                 </button>
               </div>
               <button id="inventory-close" class="inventory-close" type="button" aria-label="Close backpack inventory">
-                Close
+                ×
               </button>
             </div>
           </header>
@@ -79,7 +80,7 @@
           <header class="recipe-book-header">
             <h2>Grandma Edith's Recipe Book</h2>
             <button id="recipe-book-close" class="recipe-book-close" type="button" aria-label="Close recipe book">
-              Close
+              ×
             </button>
           </header>
 
