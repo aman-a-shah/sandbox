@@ -38,9 +38,8 @@ export function createShopCustomerState(): ShopCustomerState {
     facing: "up",
     isMoving: false,
     animationTime: 0,
-    pathPhase: "vertical",
-    stopOffsetX: 0,
-    stopOffsetY: 0,
+    targetX: 0,
+    targetY: 0,
   };
 }
 

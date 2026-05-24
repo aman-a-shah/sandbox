@@ -146,9 +146,10 @@ const CUSTOMER_DRAW_SCALE = 1.4;
 const CUSTOMER_IDLE_FRAMES = 4;
 const CUSTOMER_WALK_FRAMES = 6;
 const CUSTOMER_WALK_FRAME_SECONDS = 0.11;
-const CUSTOMER_STOP_DISTANCE = 30;
-const CUSTOMER_STOP_VARIATION = 10;
-const CUSTOMER_LANE_VARIATION = 12;
+const CUSTOMER_SELL_BOX_MIN_X = 80;
+const CUSTOMER_SELL_BOX_MAX_X = 140;
+const CUSTOMER_SELL_BOX_MIN_Y = 10;
+const CUSTOMER_SELL_BOX_MAX_Y = 50;
 const CUSTOMER_PLAYER_IDLE_URLS: Record<PlayerDirection, string> = {
   down: "/sprites-clean/player/idle-down.png",
   left: "/sprites-clean/player/idle-left.png",
@@ -1453,21 +1454,21 @@ function updateCustomers(dt: number): void {
   }
 
   if (customer.state === "arriving") {
-    moveCustomerAlongCustomerPath(dt);
+    moveCustomerTowards(getCustomerCurrentTarget(), dt);
     if (isCustomerAtTarget(getCustomerSellTarget())) {
       customer.state = "waiting";
       customer.patienceRemaining = CUSTOMER_PATIENCE_SECONDS;
       customer.purchaseTimer = CUSTOMER_PURCHASE_DELAY;
-      stopCustomerWalking("left");
+      setCustomerWanderTarget();
     }
     return;
   }
 
   if (customer.state === "waiting") {
-    stopCustomerWalking("left");
     if (getSaleTableItems().length > 0) {
       customer.state = "buying";
       customer.purchaseTimer = CUSTOMER_PURCHASE_DELAY;
+      wanderCustomerInSellBox(dt);
       return;
     }
 
@@ -1475,12 +1476,13 @@ function updateCustomers(dt: number): void {
     if (customer.patienceRemaining <= 0) {
       changeBalance(-CUSTOMER_EMPTY_PENALTY, "Customer left with no items to buy");
       customer.state = "leaving";
+      return;
     }
+    wanderCustomerInSellBox(dt);
     return;
   }
 
   if (customer.state === "buying") {
-    stopCustomerWalking("left");
     if (getSaleTableItems().length === 0) {
       customer.state = "waiting";
       return;
@@ -1490,7 +1492,9 @@ function updateCustomers(dt: number): void {
     if (customer.purchaseTimer <= 0) {
       completeCustomerPurchase();
       customer.state = "leaving";
+      return;
     }
+    wanderCustomerInSellBox(dt);
     return;
   }
 
@@ -1503,6 +1507,7 @@ function updateCustomers(dt: number): void {
 function spawnCustomer(): void {
   const entry = getCustomerEntryTarget();
   const spriteIndex = nextCustomerSpriteIndex % CUSTOMER_CLOTHING_COLORS.length;
+  const target = createCustomerSellBoxTarget();
   nextCustomerSpriteIndex += 1;
   appState.shop.customer = {
     isActive: true,
@@ -1515,9 +1520,8 @@ function spawnCustomer(): void {
     facing: "up",
     isMoving: true,
     animationTime: 0,
-    pathPhase: "vertical",
-    stopOffsetX: Math.round((Math.random() * 2 - 1) * CUSTOMER_STOP_VARIATION),
-    stopOffsetY: Math.round((Math.random() * 2 - 1) * CUSTOMER_LANE_VARIATION),
+    targetX: target.x,
+    targetY: target.y,
   };
 }
 
@@ -1528,7 +1532,8 @@ function resetCustomer(): void {
   appState.shop.customer.purchaseTimer = 0;
   appState.shop.customer.isMoving = false;
   appState.shop.customer.animationTime = 0;
-  appState.shop.customer.pathPhase = "vertical";
+  appState.shop.customer.targetX = 0;
+  appState.shop.customer.targetY = 0;
 }
 
 function getCustomerSpawnInterval(): number {
@@ -1544,38 +1549,56 @@ function getCustomerEntryTarget(): CustomerTarget {
 }
 
 function getCustomerExitTarget(): CustomerTarget {
-  return getCustomerEntryTarget();
+  const customer = appState.shop.customer;
+  return {
+    x: customer.x,
+    y: getCustomerEntryTarget().y,
+  };
 }
 
 function getCustomerSellTarget(): CustomerTarget {
   const customer = appState.shop.customer;
-  const tile = BASE_CONSTANTS.TILE_SIZE;
   return {
-    x: appState.shop.saleTable.tileX * tile + tile / 2 + CUSTOMER_STOP_DISTANCE + customer.stopOffsetX,
-    y: appState.shop.saleTable.tileY * tile + tile * 0.65 + customer.stopOffsetY,
+    x: customer.targetX,
+    y: customer.targetY,
   };
 }
 
-function getCustomerTurnTarget(): CustomerTarget {
-  const entry = getCustomerEntryTarget();
-  return {
-    x: entry.x,
-    y: getCustomerSellTarget().y,
-  };
-}
-
-function moveCustomerAlongCustomerPath(dt: number): void {
+function getCustomerCurrentTarget(): CustomerTarget {
   const customer = appState.shop.customer;
-  if (customer.pathPhase === "vertical") {
-    const turnTarget = getCustomerTurnTarget();
-    moveCustomerTowards(turnTarget, dt);
-    if (isCustomerAtTarget(turnTarget)) {
-      customer.pathPhase = "horizontal";
-    }
-    return;
+  return {
+    x: customer.targetX,
+    y: customer.targetY,
+  };
+}
+
+function createCustomerSellBoxTarget(): CustomerTarget {
+  const tile = BASE_CONSTANTS.TILE_SIZE;
+  const saleX = appState.shop.saleTable.tileX * tile + tile / 2;
+  const saleY = appState.shop.saleTable.tileY * tile + tile * 0.65;
+  return {
+    x: saleX + randomInRange(CUSTOMER_SELL_BOX_MIN_X, CUSTOMER_SELL_BOX_MAX_X),
+    y: saleY + randomInRange(CUSTOMER_SELL_BOX_MIN_Y, CUSTOMER_SELL_BOX_MAX_Y),
+  };
+}
+
+function setCustomerWanderTarget(): void {
+  const customer = appState.shop.customer;
+  const target = createCustomerSellBoxTarget();
+  customer.targetX = target.x;
+  customer.targetY = target.y;
+}
+
+function wanderCustomerInSellBox(dt: number): void {
+  if (isCustomerAtTarget(getCustomerCurrentTarget())) {
+    setCustomerWanderTarget();
   }
 
-  moveCustomerTowards(getCustomerSellTarget(), dt);
+  moveCustomerTowards(getCustomerCurrentTarget(), dt);
+}
+
+function randomInRange(min: number, max: number): number {
+  return min + Math.random() * (max - min);
 }
 
 function moveCustomerTowards(target: CustomerTarget, dt: number): void {

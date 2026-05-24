@@ -18,9 +18,8 @@ export interface ShopCustomerState {
   facing: "down" | "left" | "right" | "up";
   isMoving: boolean;
   animationTime: number;
-  pathPhase: "vertical" | "horizontal";
-  stopOffsetX: number;
-  stopOffsetY: number;
+  targetX: number;
+  targetY: number;
 }
 
 export interface RecipeStub {
