@@ -1709,8 +1709,8 @@ function createCustomerSellBoxTarget(): CustomerTarget {
 function setCustomerWanderTarget(): void {
   const customer = appState.shop.customer;
   const target = createCustomerSellBoxTarget();
-  customer.targetX = target.x;
-  customer.targetY = target.y;
+  customer.targetX = target.x+50;
+  customer.targetY = target.y-20;
 }
 
 function wanderCustomerInSellBox(dt: number): void {
