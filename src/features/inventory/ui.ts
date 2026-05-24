@@ -1,5 +1,5 @@
 import { escapeHtml } from "../../core/utils";
-import { getInventoryUsedSlots, getSelectedInventoryFish, selectDiscoveredFish, selectInventorySlot } from "./system";
+import { getInventoryUsedSlots, getSelectedInventoryItem, selectDiscoveredFish, selectInventorySlot } from "./system";
 import type { InventoryDomRefs, InventoryState } from "./types";
 
 export function syncInventoryOverlay(domRefs: InventoryDomRefs, state: InventoryState): void {
@@ -23,9 +23,9 @@ export function renderInventory(domRefs: InventoryDomRefs, state: InventoryState
       const slotButtonEl = document.createElement("button");
       slotButtonEl.type = "button";
       slotButtonEl.className = "inventory-slot";
-      const slotFish = slot.fish;
+      const slotItem = slot.item;
 
-      if (!slotFish) {
+      if (!slotItem) {
         slotButtonEl.classList.add("is-empty");
       }
 
@@ -33,8 +33,8 @@ export function renderInventory(domRefs: InventoryDomRefs, state: InventoryState
         slotButtonEl.classList.add("is-selected");
       }
 
-      const visualToken = slotFish ? escapeHtml(slotFish.placeholderVisual) : "EMPTY";
-      const slotLabel = slotFish ? escapeHtml(slotFish.name) : `Slot ${slot.slotIndex + 1}`;
+      const visualToken = slotItem ? escapeHtml(slotItem.placeholderVisual) : "EMPTY";
+      const slotLabel = slotItem ? escapeHtml(slotItem.name) : `Slot ${slot.slotIndex + 1}`;
       slotButtonEl.innerHTML = [
         `<span class=\"inventory-slot-image\">${visualToken}</span>`,
         `<p class=\"inventory-slot-label\">${slotLabel}</p>`,
@@ -84,12 +84,31 @@ export function renderInventory(domRefs: InventoryDomRefs, state: InventoryState
 }
 
 export function renderInventoryDetails(domRefs: InventoryDomRefs, state: InventoryState): void {
-  const selectedFish = getSelectedInventoryFish(state);
-  if (!selectedFish) {
-    domRefs.detailsEl.innerHTML = "<p class=\"inventory-details-placeholder\">Select a fish slot to see details.</p>";
+  const selectedItem = getSelectedInventoryItem(state);
+  if (!selectedItem) {
+    domRefs.detailsEl.innerHTML = "<p class=\"inventory-details-placeholder\">Select an item to see details.</p>";
     return;
   }
 
+  if (selectedItem.kind === "food") {
+    const rarityToken = selectedItem.rarity.toLowerCase();
+    domRefs.detailsEl.innerHTML = [
+      `<div class=\"inventory-details-image\">${escapeHtml(selectedItem.placeholderVisual)} Cooked Dish</div>`,
+      `<h4 class=\"inventory-details-title\">${escapeHtml(selectedItem.name)}</h4>`,
+      `<p class=\"inventory-rarity\" data-rarity=\"${rarityToken}\">${escapeHtml(selectedItem.rarity)}</p>`,
+      "<dl class=\"inventory-detail-list\">",
+      `<dt>Type</dt><dd>Cooked Food</dd>`,
+      `<dt>Main Fish</dt><dd>${escapeHtml(selectedItem.requiredFishName)}</dd>`,
+      `<dt>Cook Time</dt><dd>${escapeHtml(`${selectedItem.cookTimeMinutes} min`)}</dd>`,
+      `<dt>Servings</dt><dd>${escapeHtml(selectedItem.servingsLabel.replace(/^Servings:\\s*/, ""))}</dd>`,
+      `<dt>Calories</dt><dd>${selectedItem.calories === null ? "Unknown" : escapeHtml(String(selectedItem.calories))}</dd>`,
+      `<dt>Value</dt><dd>$${selectedItem.value.toFixed(2)}</dd>`,
+      "</dl>",
+    ].join("");
+    return;
+  }
+
+  const selectedFish = selectedItem;
   const rarityToken = selectedFish.rarity.toLowerCase();
   const depthText =
     selectedFish.averageDepthMeters === null ? "Unknown" : `${selectedFish.averageDepthMeters.toFixed(1)} m`;

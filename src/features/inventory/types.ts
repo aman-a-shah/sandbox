@@ -1,6 +1,22 @@
 export type FishRarity = "Common" | "Uncommon" | "Rare" | "Legendary";
 
+export interface InventoryFoodDefinition {
+  kind: "food";
+  id: string;
+  recipeId: string;
+  name: string;
+  rarity: FishRarity;
+  value: number;
+  placeholderVisual: string;
+  requiredFishName: string;
+  servingsLabel: string;
+  cookTimeMinutes: number;
+  calories: number | null;
+  summary: string | null;
+}
+
 export interface InventoryFishDefinition {
+  kind: "fish";
   id: string;
   name: string;
   scientificName: string;
@@ -31,10 +47,11 @@ export interface InventoryFishDefinition {
 }
 
 export type PlaceholderFishDefinition = InventoryFishDefinition;
+export type InventoryItemDefinition = InventoryFishDefinition | InventoryFoodDefinition;
 
 export interface InventorySlot {
   slotIndex: number;
-  fish: InventoryFishDefinition | null;
+  item: InventoryItemDefinition | null;
 }
 
 export type InventoryView = "bag" | "discovered";

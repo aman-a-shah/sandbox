@@ -10,6 +10,7 @@ function createCatalogFish(
   placeholderVisual: string,
 ): PlaceholderFishDefinition {
   return {
+    kind: "fish",
     id,
     name,
     scientificName,

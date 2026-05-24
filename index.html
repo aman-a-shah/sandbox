@@ -25,6 +25,7 @@
         workstation: press E • Ocean fishing: click water to cast, click bobber on bite, hold mouse to reel
       </p>
       <p id="workstation-prompt" class="workstation-prompt is-hidden">Press E to open workstation</p>
+      <p id="craft-toast" class="craft-toast is-hidden" aria-live="polite"></p>
 
       <section id="inventory-overlay" class="inventory-overlay is-hidden" aria-hidden="true">
         <div class="inventory-panel" role="dialog" aria-modal="true" aria-label="Backpack inventory">
@@ -66,7 +67,7 @@
             </section>
 
             <aside class="inventory-details-panel" aria-live="polite">
-              <h3>Fish Details</h3>
+              <h3>Item Details</h3>
               <div id="inventory-details" class="inventory-details"></div>
             </aside>
           </div>
@@ -82,13 +83,24 @@
             </button>
           </header>
 
-          <p id="recipe-book-selection-status" class="recipe-book-selection-status">Select a recipe from this spread.</p>
-          <div id="recipe-book-grid" class="recipe-book-grid" aria-live="polite"></div>
+          <div class="recipe-book-content">
+            <section class="recipe-book-list-panel" aria-label="Recipe list">
+              <div id="recipe-book-grid" class="recipe-book-grid" aria-live="polite"></div>
 
-          <footer class="recipe-book-controls">
-            <button id="recipe-book-prev" type="button">Prev Page</button>
-            <p id="recipe-book-page-indicator" class="recipe-book-page-indicator">Page 1 / 1</p>
-            <button id="recipe-book-next" type="button">Next Page</button>
+              <footer class="recipe-book-controls">
+                <button id="recipe-book-prev" type="button">Prev Page</button>
+                <p id="recipe-book-page-indicator" class="recipe-book-page-indicator">Page 1 / 1</p>
+                <button id="recipe-book-next" type="button">Next Page</button>
+              </footer>
+            </section>
+
+            <aside class="recipe-book-details-panel" aria-live="polite">
+              <div id="recipe-book-details" class="recipe-book-details"></div>
+            </aside>
+          </div>
+
+          <footer class="recipe-book-action-bar">
+            <button id="recipe-book-cook" class="recipe-book-cook" type="button">Cook</button>
           </footer>
         </div>
       </section>
