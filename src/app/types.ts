@@ -16,12 +16,19 @@ export interface OceanTravelState {
   selectedHabitatId: string | null;
 }
 
+export interface EconomyState {
+  balance: number;
+  bankruptcyThreshold: number;
+  isGameOver: boolean;
+}
+
 export interface AppState {
   base: BaseState;
   fishing: FishingState;
   inventory: InventoryState;
   shop: ShopState;
   travel: OceanTravelState;
+  economy: EconomyState;
   keysDown: Set<string>;
   fps: number;
   lastFrameTime: number;

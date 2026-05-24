@@ -1,9 +1,19 @@
+import type { InventorySlot } from "../inventory/types";
 import type { SceneId } from "../base/types";
 
 export interface Workstation {
   sceneId: SceneId;
   tileX: number;
   tileY: number;
+}
+
+export interface ShopCustomerState {
+  isActive: boolean;
+  x: number;
+  y: number;
+  state: "arriving" | "waiting" | "buying" | "leaving";
+  patienceRemaining: number;
+  purchaseTimer: number;
 }
 
 export interface RecipeStub {
@@ -16,10 +26,14 @@ export interface RecipeStub {
   requiredFishQuantity: number;
   rarity: string;
   estimatedPrice: number | null;
+  craftCost: number;
   calories: number | null;
   instructions: string | null;
+  hasRequiredFish: boolean;
+  canAfford: boolean;
   isCraftable: boolean;
   missingRequiredFishCount: number;
+  missingBalanceAmount: number;
   availabilityLabel: string;
   summary: string | null;
   dishTypes: string[];
@@ -44,7 +58,13 @@ export interface RecipeBookState {
 
 export interface ShopState {
   workstation: Workstation;
+  saleTable: Workstation;
   recipeBook: RecipeBookState;
+  isSaleManagementOpen: boolean;
+  saleTableSlots: InventorySlot[];
+  customer: ShopCustomerState;
+  customerSpawnTimer: number;
+  gameElapsedSeconds: number;
 }
 
 export interface ShopDomRefs {

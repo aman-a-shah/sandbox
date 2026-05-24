@@ -55,10 +55,12 @@ export interface InventorySlot {
 }
 
 export type InventoryView = "bag" | "discovered";
+export type InventoryInteractionMode = "default" | "sale";
 
 export interface InventoryState {
   isOpen: boolean;
   activeView: InventoryView;
+  interactionMode: InventoryInteractionMode;
   selectedSlotIndex: number | null;
   selectedDiscoveredFishId: string | null;
   slots: InventorySlot[];
@@ -75,7 +77,11 @@ export interface InventoryDomRefs {
   bagTabButtonEl: HTMLButtonElement;
   discoveredTabButtonEl: HTMLButtonElement;
   overlayEl: HTMLElement;
+  modeBannerEl: HTMLElement;
   gridEl: HTMLDivElement;
+  saleGridEl: HTMLDivElement;
+  salePanelEl: HTMLElement;
+  saleCapacityEl: HTMLElement;
   detailsEl: HTMLDivElement;
   capacityEl: HTMLElement;
 }

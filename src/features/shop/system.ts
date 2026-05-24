@@ -36,6 +36,31 @@ export function drawWorkstation(
   renderCtx.strokeRect(drawX, drawY + BASE_CONSTANTS.TILE_SIZE, drawWidth, BASE_CONSTANTS.TILE_SIZE * 2);
 }
 
+export function drawSaleTable(
+  renderCtx: CanvasRenderingContext2D,
+  currentSceneId: BaseState["currentSceneId"],
+  saleTable: Workstation,
+  camera: BaseState["camera"],
+): void {
+  if (currentSceneId !== saleTable.sceneId) {
+    return;
+  }
+
+  const tile = BASE_CONSTANTS.TILE_SIZE;
+  const x = saleTable.tileX * tile - camera.x - tile * 1.1;
+  const y = saleTable.tileY * tile - camera.y - tile * 0.45;
+  const width = tile * 2.2;
+  const height = tile * 1.1;
+
+  renderCtx.fillStyle = "#6b3e29";
+  renderCtx.fillRect(x, y, width, height);
+  renderCtx.strokeStyle = "#2f1b16";
+  renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
+  renderCtx.strokeRect(x, y, width, height);
+  renderCtx.fillStyle = "#f2ddb4";
+  renderCtx.fillRect(x + tile * 0.16, y + tile * 0.18, width - tile * 0.32, tile * 0.18);
+}
+
 export function isPlayerNearWorkstation(baseState: BaseState, workstation: Workstation): boolean {
   if (baseState.currentSceneId !== workstation.sceneId) {
     return false;
@@ -44,6 +69,17 @@ export function isPlayerNearWorkstation(baseState: BaseState, workstation: Works
   const playerTileX = Math.floor(baseState.player.x / BASE_CONSTANTS.TILE_SIZE);
   const playerTileY = Math.floor(baseState.player.y / BASE_CONSTANTS.TILE_SIZE);
   const tileDistance = Math.abs(playerTileX - workstation.tileX) + Math.abs(playerTileY - workstation.tileY);
+  return tileDistance <= WORKSTATION_INTERACT_TILE_DISTANCE;
+}
+
+export function isPlayerNearSaleTable(baseState: BaseState, saleTable: Workstation): boolean {
+  if (baseState.currentSceneId !== saleTable.sceneId) {
+    return false;
+  }
+
+  const playerTileX = Math.floor(baseState.player.x / BASE_CONSTANTS.TILE_SIZE);
+  const playerTileY = Math.floor(baseState.player.y / BASE_CONSTANTS.TILE_SIZE);
+  const tileDistance = Math.abs(playerTileX - saleTable.tileX) + Math.abs(playerTileY - saleTable.tileY);
   return tileDistance <= WORKSTATION_INTERACT_TILE_DISTANCE;
 }
 
@@ -112,6 +148,7 @@ function renderRecipeDetails(recipe: RecipeStub | null, detailsEl: HTMLDivElemen
     `Ready in ${recipe.cookTimeMinutes || "?"} min`,
     recipe.servingsLabel,
     recipe.availabilityLabel,
+    `Cost: $${recipe.craftCost.toFixed(2)}`,
   ].filter(Boolean);
 
   const nutritionMarkup =
@@ -174,7 +211,7 @@ export function renderRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): 
 
     cardButtonEl.innerHTML = [
       `<h3 class="recipe-card-title">${escapeHtml(recipe.name)}</h3>`,
-      `<p class="recipe-card-fish">${recipe.currentFishQuantity}/${recipe.requiredFishQuantity} ${escapeHtml(recipe.requiredFishName)}</p>`,
+      `<p class="recipe-card-fish">${recipe.currentFishQuantity}/${recipe.requiredFishQuantity} ${escapeHtml(recipe.requiredFishName)} • $${recipe.craftCost.toFixed(2)}</p>`,
     ].join("");
 
     cardButtonEl.addEventListener("click", () => {
@@ -190,6 +227,10 @@ export function renderRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): 
   domRefs.recipeBookNextButtonEl.disabled = state.currentPage >= pageCount - 1;
   const recipeForDetails = selectedRecipe ?? pageRecipes[0] ?? null;
   domRefs.recipeBookCookButtonEl.disabled = !recipeForDetails?.isCraftable;
-  domRefs.recipeBookCookButtonEl.textContent = recipeForDetails?.isCraftable ? "Cook" : "Need More Fish";
+  domRefs.recipeBookCookButtonEl.textContent = recipeForDetails?.isCraftable
+    ? `Cook ($${recipeForDetails.craftCost.toFixed(2)})`
+    : recipeForDetails && !recipeForDetails.hasRequiredFish
+      ? "Need More Fish"
+      : "Not Enough Cash";
   renderRecipeDetails(recipeForDetails, domRefs.recipeBookDetailsEl);
 }

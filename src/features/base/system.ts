@@ -317,6 +317,9 @@ export function renderStatus(
     }
   }
   rows.push(["Bag", `${snapshot.inventoryUsedSlots}/${snapshot.inventoryTotalSlots}`]);
+  if (typeof snapshot.balance === "number") {
+    rows.push(["Cash", `$${snapshot.balance.toFixed(2)}`]);
+  }
 
   statusReadoutEl.innerHTML = rows.map(([label, value]) => `<dt>${label}</dt><dd>${value}</dd>`).join("");
 }

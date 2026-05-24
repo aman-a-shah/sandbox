@@ -27,6 +27,18 @@
       </p>
       <p id="workstation-prompt" class="workstation-prompt is-hidden">Press E to open workstation</p>
       <p id="craft-toast" class="craft-toast is-hidden" aria-live="polite"></p>
+      <aside class="economy-hud" aria-live="polite">
+        <div id="money-delta-stack" class="money-delta-stack"></div>
+        <p id="balance-display" class="balance-display">Balance: $0.00</p>
+      </aside>
+      <div id="cook-marker" class="world-marker is-hidden" aria-hidden="true">
+        <span class="world-marker-label">Cook Here</span>
+        <span class="world-marker-arrow" aria-hidden="true"></span>
+      </div>
+      <div id="sell-marker" class="world-marker is-hidden" aria-hidden="true">
+        <span class="world-marker-label">Sell Here</span>
+        <span class="world-marker-arrow" aria-hidden="true"></span>
+      </div>
 
       <section id="inventory-overlay" class="inventory-overlay is-hidden" aria-hidden="true">
         <div class="inventory-panel" role="dialog" aria-modal="true" aria-label="Backpack inventory">
@@ -63,8 +75,16 @@
 
           <div class="inventory-content">
             <section class="inventory-grid-panel" aria-label="Inventory slots">
+              <p id="inventory-mode-banner" class="inventory-mode-banner is-hidden"></p>
               <p id="inventory-capacity" class="inventory-capacity">0 / 15 slots used</p>
               <div id="inventory-grid" class="inventory-grid" aria-live="polite"></div>
+              <section id="sale-table-panel" class="sale-table-panel is-hidden" aria-label="Sale table slots">
+                <div class="sale-table-panel-header">
+                  <h3>Sale Table</h3>
+                  <p id="sale-table-capacity" class="inventory-capacity">0 / 5 slots used</p>
+                </div>
+                <div id="sale-table-grid" class="inventory-grid sale-table-grid" aria-live="polite"></div>
+              </section>
             </section>
 
             <aside class="inventory-details-panel" aria-live="polite">
@@ -112,6 +132,13 @@
           <dl id="status-readout" class="status-readout"></dl>
         </section>
       </aside>
+
+      <section id="game-over-overlay" class="game-over-overlay is-hidden" aria-hidden="true">
+        <div class="game-over-card" role="alert" aria-live="assertive">
+          <h2>You Filed For Bankruptcy</h2>
+          <p>Your balance hit -$1000.00 and the restaurant is finished.</p>
+        </div>
+      </section>
     </main>
 
     <script type="module" src="/src/game.ts"></script>

@@ -420,6 +420,7 @@ function mapRecipeRecordToRecipeBookRecipe(entry: MasterRecipeFishEntry, recipe:
   const rawFishName = entry.fish.commonName;
   const displayFishName = toTitleCase(rawFishName);
   const requiredQuantity = sumRequiredFishQuantity(recipe);
+  const craftCost = Number((((recipe.estimatedPrice.basePriceFromApi ?? 0) / 5) || 0).toFixed(2));
 
   return {
     id: String(recipe.recipeId),
@@ -431,10 +432,14 @@ function mapRecipeRecordToRecipeBookRecipe(entry: MasterRecipeFishEntry, recipe:
     requiredFishQuantity: requiredQuantity,
     rarity: recipe.rarity,
     estimatedPrice: recipe.estimatedPrice.total,
+    craftCost,
     calories: recipe.nutrition.calories,
     instructions: replaceFishDisplayName(recipe.recipe.instructions, rawFishName, displayFishName),
+    hasRequiredFish: true,
+    canAfford: true,
     isCraftable: true,
     missingRequiredFishCount: 0,
+    missingBalanceAmount: 0,
     availabilityLabel: "Ready to cook",
     summary: replaceFishDisplayName(recipe.recipe.summary, rawFishName, displayFishName),
     dishTypes: recipe.recipe.dishTypes,

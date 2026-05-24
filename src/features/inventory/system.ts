@@ -1,4 +1,13 @@
-import type { AddFishResult, InventoryFishDefinition, InventoryFoodDefinition, InventoryItemDefinition, InventoryState, InventoryView } from "./types";
+import type {
+  AddFishResult,
+  InventoryFishDefinition,
+  InventoryFoodDefinition,
+  InventoryInteractionMode,
+  InventoryItemDefinition,
+  InventorySlot,
+  InventoryState,
+  InventoryView,
+} from "./types";
 
 export function toggleInventoryOpen(state: InventoryState): boolean {
   state.isOpen = !state.isOpen;
@@ -11,6 +20,13 @@ export function setInventoryOpen(state: InventoryState, isOpen: boolean): void {
 
 export function setInventoryView(state: InventoryState, view: InventoryView): void {
   state.activeView = view;
+}
+
+export function setInventoryInteractionMode(state: InventoryState, mode: InventoryInteractionMode): void {
+  state.interactionMode = mode;
+  if (mode === "sale") {
+    state.activeView = "bag";
+  }
 }
 
 export function getInventoryUsedSlots(state: InventoryState): number {
@@ -82,16 +98,21 @@ export function tryAddFoodToInventory(state: InventoryState, food: InventoryFood
 }
 
 export function tryAddItemToInventory(state: InventoryState, item: InventoryItemDefinition): AddFishResult {
-  const openSlot = state.slots.find((slot) => slot.item === null);
+  const result = tryAddItemToSlots(state.slots, item);
+  if (result.added && state.selectedSlotIndex === null) {
+    state.selectedSlotIndex = result.slotIndex;
+  }
+
+  return result;
+}
+
+export function tryAddItemToSlots(slots: InventorySlot[], item: InventoryItemDefinition): AddFishResult {
+  const openSlot = slots.find((slot) => slot.item === null);
   if (!openSlot) {
     return { added: false, slotIndex: null };
   }
 
   openSlot.item = item;
-  if (state.selectedSlotIndex === null) {
-    state.selectedSlotIndex = openSlot.slotIndex;
-  }
-
   return { added: true, slotIndex: openSlot.slotIndex };
 }
 
@@ -124,4 +145,28 @@ export function removeFishFromInventory(
   }
 
   return removedCount;
+}
+
+export function removeItemFromSlotsByIndex(slots: InventorySlot[], slotIndex: number): InventoryItemDefinition | null {
+  const slot = slots[slotIndex];
+  if (!slot?.item) {
+    return null;
+  }
+
+  const removedItem = slot.item;
+  slot.item = null;
+  return removedItem;
+}
+
+export function removeInventoryItemBySlotIndex(state: InventoryState, slotIndex: number): InventoryItemDefinition | null {
+  const removedItem = removeItemFromSlotsByIndex(state.slots, slotIndex);
+  if (!removedItem) {
+    return null;
+  }
+
+  if (state.selectedSlotIndex === slotIndex) {
+    state.selectedSlotIndex = state.slots.find((entry) => entry.item !== null)?.slotIndex ?? null;
+  }
+
+  return removedItem;
 }

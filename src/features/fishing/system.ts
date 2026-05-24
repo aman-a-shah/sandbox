@@ -332,7 +332,7 @@ export function drawFishingHud(
 
 function drawFishingStatusText(renderCtx: CanvasRenderingContext2D, state: FishingState): void {
   const boxHeight = Math.max(1, Math.round(28 * BASE_CONSTANTS.GLOBAL_SCALE));
-  const boxWidth = Math.max(1, Math.round(292 * BASE_CONSTANTS.GLOBAL_SCALE));
+  const boxWidth = Math.max(1, Math.round(420 * BASE_CONSTANTS.GLOBAL_SCALE));
   const x = Math.max(1, Math.round(14 * BASE_CONSTANTS.GLOBAL_SCALE));
   const y = BASE_CONSTANTS.RENDER_HEIGHT - boxHeight - Math.max(1, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE));
 

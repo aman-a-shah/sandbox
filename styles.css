@@ -175,6 +175,120 @@ body {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
 }
 
+.economy-hud {
+  position: fixed;
+  right: 14px;
+  bottom: 16px;
+  z-index: 24;
+  display: grid;
+  gap: 8px;
+  transform: scale(var(--global-scale));
+  transform-origin: bottom right;
+}
+
+.balance-display {
+  margin: 0;
+  padding: 8px 12px;
+  border: 3px solid var(--wood-dark);
+  border-radius: 6px;
+  color: #fff0c5;
+  font-weight: 700;
+  background: rgba(37, 24, 20, 0.92);
+  box-shadow: 0 4px 0 rgba(24, 15, 13, 0.75);
+}
+
+.money-delta-stack {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.money-delta {
+  justify-self: end;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: #fff8ef;
+  background: rgba(28, 20, 17, 0.88);
+  animation: money-delta-fade 2.4s ease forwards;
+}
+
+.money-delta.is-positive {
+  color: #c8ffd5;
+  border: 1px solid rgba(89, 214, 126, 0.65);
+}
+
+.money-delta.is-negative {
+  color: #ffd4c8;
+  border: 1px solid rgba(227, 108, 86, 0.65);
+}
+
+.world-marker {
+  position: fixed;
+  z-index: 19;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  pointer-events: none;
+  transform: translate(-50%, -100%) scale(var(--global-scale));
+  transform-origin: center bottom;
+}
+
+.world-marker.is-hidden {
+  display: none;
+}
+
+.world-marker-label {
+  padding: 4px 8px;
+  border: 2px solid var(--wood-dark);
+  border-radius: 999px;
+  color: #fff4cf;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(47, 31, 25, 0.92);
+  white-space: nowrap;
+  box-shadow: 0 3px 0 rgba(24, 15, 13, 0.65);
+}
+
+.world-marker-arrow {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid #ffd487;
+  filter: drop-shadow(0 2px 0 rgba(31, 18, 14, 0.7));
+  animation: marker-bob 1.2s ease-in-out infinite;
+}
+
+@keyframes marker-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+@keyframes money-delta-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  12%,
+  72% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
 .inventory-overlay {
   position: fixed;
   inset: 0;
@@ -277,6 +391,36 @@ body {
   margin: 0;
   color: #ffd89b;
   font-size: 0.92rem;
+}
+
+.inventory-mode-banner {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(250, 229, 165, 0.5);
+  border-radius: 8px;
+  color: #fff1c8;
+  background: rgba(58, 37, 24, 0.76);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.sale-table-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.sale-table-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.sale-table-panel-header h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  color: #ffe4ae;
 }
 
 .inventory-grid {
@@ -772,6 +916,34 @@ body {
 .status-readout dd {
   margin: 0;
   text-align: right;
+}
+
+.game-over-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(19, 7, 6, 0.82);
+}
+
+.game-over-card {
+  width: min(460px, calc(100vw - 32px));
+  padding: 22px;
+  border: 4px solid #5f2318;
+  border-radius: 10px;
+  color: #ffe9dc;
+  text-align: center;
+  background: linear-gradient(180deg, #7f2f22 0%, #4b1c16 100%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.game-over-card h2 {
+  margin: 0 0 10px;
+}
+
+.game-over-card p {
+  margin: 0;
 }
 
 @media (max-width: 920px) {
