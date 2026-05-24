@@ -29,6 +29,7 @@ import {
   toScreenPoint,
   toWorldPoint,
   updateCamera,
+  updatePlayerAnimation,
 } from "./features/base";
 import type { BaseState, SceneId } from "./features/base";
 import { createFishingState, drawFishingHud, drawFishingWorldLayer, handleFishingClick, isFishingInputLocked, resetFishingState, updateFishing } from "./features/fishing";
@@ -121,6 +122,10 @@ const OCEAN_REGION_DEBUG_COLORS = [
   "#49b6b1",
   "#cf69a1",
 ];
+const oceanMinimapUrl = new URL("../sprites/minimap full.png", import.meta.url).href;
+const oceanMinimapImage = new Image();
+oceanMinimapImage.src = oceanMinimapUrl;
+const OCEAN_MINIMAP_ASPECT_RATIO = 1537 / 1023;
 
 const OCEAN_HABITAT_BLOB_LAYOUT: Array<{
   circles: OceanHabitatBlobCircle[];
@@ -405,6 +410,7 @@ function update(dt: number): void {
   const nextY = appState.base.player.y + velocity.y * BASE_CONSTANTS.PLAYER_SPEED * dt;
 
   movePlayer(appState.base, nextX, nextY);
+  updatePlayerAnimation(appState.base, velocity, dt);
   updateFishing(appState.fishing, dt, {
     currentSceneId: appState.base.currentSceneId,
     scenes: appState.base.scenes,
@@ -861,8 +867,20 @@ function isPlayerOnDock(): boolean {
 
 function getExpandedMapLayout(): ExpandedMapLayout {
   const panelPadding = Math.max(1, Math.round(16 * BASE_CONSTANTS.GLOBAL_SCALE));
-  const boxWidth = Math.max(1, Math.round(BASE_CONSTANTS.RENDER_WIDTH * 0.84));
-  const boxHeight = Math.max(1, Math.round(BASE_CONSTANTS.RENDER_HEIGHT * 0.78));
+  const maxBoxWidth = Math.max(1, Math.round(BASE_CONSTANTS.RENDER_WIDTH * 0.84));
+  const maxBoxHeight = Math.max(1, Math.round(BASE_CONSTANTS.RENDER_HEIGHT * 0.78));
+  const maxChartWidth = Math.max(1, maxBoxWidth - panelPadding * 2);
+  const maxChartHeight = Math.max(1, maxBoxHeight - panelPadding * 2);
+  const chartWidth =
+    maxChartWidth / maxChartHeight > OCEAN_MINIMAP_ASPECT_RATIO
+      ? Math.round(maxChartHeight * OCEAN_MINIMAP_ASPECT_RATIO)
+      : maxChartWidth;
+  const chartHeight =
+    maxChartWidth / maxChartHeight > OCEAN_MINIMAP_ASPECT_RATIO
+      ? maxChartHeight
+      : Math.round(maxChartWidth / OCEAN_MINIMAP_ASPECT_RATIO);
+  const boxWidth = chartWidth + panelPadding * 2;
+  const boxHeight = chartHeight + panelPadding * 2;
   const boxX = Math.round((BASE_CONSTANTS.RENDER_WIDTH - boxWidth) / 2);
   const boxY = Math.round((BASE_CONSTANTS.RENDER_HEIGHT - boxHeight) / 2);
 
@@ -873,8 +891,8 @@ function getExpandedMapLayout(): ExpandedMapLayout {
     boxHeight,
     chartX: boxX + panelPadding,
     chartY: boxY + panelPadding,
-    chartWidth: boxWidth - panelPadding * 2,
-    chartHeight: boxHeight - panelPadding * 2,
+    chartWidth,
+    chartHeight,
   };
 }
 
@@ -967,14 +985,14 @@ function drawDockPlaceholder(): void {
   const dockTopLeft = toScreenPoint(appState.base, { x: dockRect.x, y: dockRect.y });
   const dockInset = Math.max(1, Math.round(2 * BASE_CONSTANTS.GLOBAL_SCALE));
 
-  renderCtx.fillStyle = "rgba(101, 72, 43, 0.95)";
+  renderCtx.fillStyle = "#8b5130";
   renderCtx.fillRect(dockTopLeft.x, dockTopLeft.y, dockRect.width, dockRect.height);
 
-  renderCtx.strokeStyle = "rgba(249, 217, 159, 0.95)";
+  renderCtx.strokeStyle = "#4b2b22";
   renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
   renderCtx.strokeRect(dockTopLeft.x, dockTopLeft.y, dockRect.width, dockRect.height);
 
-  renderCtx.fillStyle = "rgba(67, 46, 26, 0.75)";
+  renderCtx.fillStyle = "#5f3528";
   renderCtx.fillRect(
     dockTopLeft.x + dockInset,
     dockTopLeft.y + dockInset,
@@ -982,14 +1000,31 @@ function drawDockPlaceholder(): void {
     dockRect.height - dockInset * 2,
   );
 
-  renderCtx.fillStyle = "#f5e4c1";
+  const labelWidth = Math.max(1, Math.round(228 * BASE_CONSTANTS.GLOBAL_SCALE));
+  const labelHeight = Math.max(1, Math.round(22 * BASE_CONSTANTS.GLOBAL_SCALE));
+  const labelX = Math.round(dockTopLeft.x + dockRect.width / 2 - labelWidth / 2);
+  const labelY = Math.round(dockTopLeft.y - labelHeight - Math.max(5, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)));
+
+  renderCtx.fillStyle = "#8b5130";
+  renderCtx.fillRect(labelX, labelY, labelWidth, labelHeight);
+  renderCtx.fillStyle = "#5f3528";
+  renderCtx.fillRect(
+    labelX + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    labelY + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    labelWidth - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    labelHeight - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
+  );
+  renderCtx.strokeStyle = "#4b2b22";
+  renderCtx.strokeRect(labelX, labelY, labelWidth, labelHeight);
+
+  renderCtx.fillStyle = "#ffe4ae";
   renderCtx.font = `${Math.max(10, Math.round(11 * BASE_CONSTANTS.GLOBAL_SCALE))}px monospace`;
   renderCtx.textAlign = "center";
-  renderCtx.textBaseline = "bottom";
+  renderCtx.textBaseline = "middle";
   renderCtx.fillText(
     "Dock: stand here + press E",
-    dockTopLeft.x + dockRect.width / 2,
-    dockTopLeft.y - Math.max(3, Math.round(4 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    labelX + labelWidth / 2,
+    labelY + labelHeight / 2 + 0.5 * BASE_CONSTANTS.GLOBAL_SCALE,
   );
 }
 
@@ -999,77 +1034,46 @@ function drawOceanMapOverlay(): void {
   }
 
   const layout = getExpandedMapLayout();
-  const geometry = getOceanChartGeometry(layout);
 
-  renderCtx.fillStyle = "rgba(4, 9, 22, 0.75)";
+  renderCtx.fillStyle = "rgba(25, 39, 45, 0.72)";
   renderCtx.fillRect(0, 0, BASE_CONSTANTS.RENDER_WIDTH, BASE_CONSTANTS.RENDER_HEIGHT);
 
-  renderCtx.fillStyle = "rgba(8, 23, 40, 0.96)";
-  renderCtx.strokeStyle = "rgba(167, 203, 230, 0.42)";
-  renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
+  renderCtx.fillStyle = "#8b5130";
   renderCtx.fillRect(layout.boxX, layout.boxY, layout.boxWidth, layout.boxHeight);
+  renderCtx.fillStyle = "#7b422b";
+  renderCtx.fillRect(
+    layout.boxX + Math.max(1, Math.round(4 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxY + Math.max(1, Math.round(4 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxWidth - Math.max(1, Math.round(8 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxHeight - Math.max(1, Math.round(8 * BASE_CONSTANTS.GLOBAL_SCALE)),
+  );
+  renderCtx.strokeStyle = "#4b2b22";
+  renderCtx.lineWidth = 1;
   renderCtx.strokeRect(layout.boxX, layout.boxY, layout.boxWidth, layout.boxHeight);
+  renderCtx.strokeStyle = "rgba(255, 224, 150, 0.28)";
+  renderCtx.strokeRect(
+    layout.boxX + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxY + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxWidth - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxHeight - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
+  );
 
-  renderCtx.fillStyle = "#4f98c9";
+  renderCtx.fillStyle = "#5f3528";
   renderCtx.fillRect(layout.chartX, layout.chartY, layout.chartWidth, layout.chartHeight);
 
-  renderCtx.strokeStyle = "rgba(167, 203, 230, 0.36)";
-  renderCtx.strokeRect(layout.chartX, layout.chartY, layout.chartWidth, layout.chartHeight);
-
-  for (const region of oceanHabitatRegionsByRouteId.values()) {
-    if (!travelDebugState.showHabitatRegionDebug) {
-      continue;
-    }
-
-    drawOceanHabitatBlobPath(layout, region.circles);
-    renderCtx.fillStyle = region.debugColor;
-    renderCtx.globalAlpha = 0.33;
-    renderCtx.fill("evenodd");
-    renderCtx.globalAlpha = 1;
+  if (oceanMinimapImage.complete) {
+    drawImageContained(
+      oceanMinimapImage,
+      layout.chartX,
+      layout.chartY,
+      layout.chartWidth,
+      layout.chartHeight,
+    );
   }
 
-  renderCtx.fillStyle = "rgba(229, 195, 129, 0.98)";
-  renderCtx.strokeStyle = "rgba(255, 236, 193, 0.9)";
-  renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
-  renderCtx.beginPath();
-  renderCtx.ellipse(
-    geometry.centerX,
-    geometry.centerY,
-    geometry.islandRadiusX,
-    geometry.islandRadiusY,
-    0,
-    0,
-    Math.PI * 2,
-  );
-  renderCtx.fill();
-  renderCtx.stroke();
-
-  renderCtx.fillStyle = "rgba(98, 148, 72, 0.9)";
-  renderCtx.beginPath();
-  renderCtx.ellipse(
-    geometry.centerX - geometry.islandRadiusX * 0.12,
-    geometry.centerY - geometry.islandRadiusY * 0.2,
-    geometry.islandRadiusX * 0.56,
-    geometry.islandRadiusY * 0.38,
-    0,
-    0,
-    Math.PI * 2,
-  );
-  renderCtx.fill();
-
-  renderCtx.fillStyle = "#e6f4ff";
-  renderCtx.font = `${Math.max(10, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE))}px monospace`;
-  renderCtx.textAlign = "left";
-  renderCtx.textBaseline = "top";
-  renderCtx.fillText("Uncharted waters", layout.boxX + Math.max(1, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE)), layout.boxY + Math.max(1, Math.round(10 * BASE_CONSTANTS.GLOBAL_SCALE)));
-
-  renderCtx.fillStyle = "rgba(214, 241, 255, 0.82)";
-  renderCtx.font = `${Math.max(9, Math.round(10 * BASE_CONSTANTS.GLOBAL_SCALE))}px monospace`;
-  renderCtx.fillText(
-    "Click the sea to depart",
-    layout.boxX + Math.max(1, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE)),
-    layout.boxY + layout.boxHeight - Math.max(1, Math.round(18 * BASE_CONSTANTS.GLOBAL_SCALE)),
-  );
+  renderCtx.strokeStyle = "#4b2b22";
+  renderCtx.lineWidth = 1;
+  renderCtx.strokeRect(layout.chartX, layout.chartY, layout.chartWidth, layout.chartHeight);
 
   if (travelDebugState.showHabitatRegionDebug) {
     const selectedRoute = getSelectedHabitatRoute();
@@ -1081,6 +1085,16 @@ function drawOceanMapOverlay(): void {
       layout.boxY + layout.boxHeight - Math.max(1, Math.round(32 * BASE_CONSTANTS.GLOBAL_SCALE)),
     );
   }
+}
+
+function drawImageContained(image: HTMLImageElement, x: number, y: number, width: number, height: number): void {
+  const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  const drawX = x + (width - drawWidth) / 2;
+  const drawY = y + (height - drawHeight) / 2;
+
+  renderCtx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
 }
 
 function syncFishingStatusForActiveHabitat(): void {

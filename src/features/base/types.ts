@@ -36,7 +36,12 @@ export interface Player {
   y: number;
   size: number;
   color: string;
+  facing: PlayerDirection;
+  isMoving: boolean;
+  animationTime: number;
 }
+
+export type PlayerDirection = "down" | "left" | "right" | "up";
 
 export interface Camera {
   x: number;

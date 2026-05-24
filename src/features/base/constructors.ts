@@ -20,6 +20,9 @@ export function createPlayer(): Player {
     y: 0,
     size: BASE_CONSTANTS.PLAYER_SIZE,
     color: "#f8f32b",
+    facing: "down",
+    isMoving: false,
+    animationTime: 0,
   };
 }
 

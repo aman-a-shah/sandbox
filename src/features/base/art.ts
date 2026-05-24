@@ -1,16 +1,29 @@
 import { BASE_CONSTANTS } from "./constants";
 import { getTileKind, isRestaurantInteriorTile } from "./terrain";
-import type { BaseState, SceneId } from "./types";
+import type { BaseState, PlayerDirection, SceneId } from "./types";
 
 const propsUrl = "/sprites-clean/props_transparent.png";
 const treesUrl = "/sprites-clean/trees_transparent.png";
 const boatUrl = "/sprites-clean/boat_transparent.png";
-const playerUrl = "/sprites-clean/Idle.png";
 const interiorUrl = "/sprites-clean/Interior.png";
 const islandFullUrl = new URL("../../../sprites/island_full.png", import.meta.url).href;
 const oceanFullUrl = new URL("../../../sprites/ocean_full.png", import.meta.url).href;
 const kitchenFullUrl = new URL("../../../sprites/kitchen_full.png", import.meta.url).href;
 const doorUrl = new URL("../../../sprites/door.png", import.meta.url).href;
+
+const playerIdleUrls: Record<PlayerDirection, string> = {
+  down: "/sprites-clean/player/idle-down.png",
+  left: "/sprites-clean/player/idle-left.png",
+  right: "/sprites-clean/player/idle-right.png",
+  up: "/sprites-clean/player/idle-up.png",
+};
+
+const playerWalkUrls: Record<PlayerDirection, string> = {
+  down: "/sprites-clean/player/walk-down.png",
+  left: "/sprites-clean/player/walk-left.png",
+  right: "/sprites-clean/player/walk-right.png",
+  up: "/sprites-clean/player/walk-up.png",
+};
 
 interface SpriteRect {
   x: number;
@@ -34,7 +47,8 @@ const artImages = {
   props: loadImage(propsUrl),
   trees: loadImage(treesUrl),
   boat: loadImage(boatUrl),
-  player: loadImage(playerUrl),
+  playerIdle: loadPlayerImages(playerIdleUrls),
+  playerWalk: loadPlayerImages(playerWalkUrls),
   interior: loadImage(interiorUrl),
   islandFull: loadImage(islandFullUrl),
   oceanFull: loadImage(oceanFullUrl),
@@ -43,7 +57,11 @@ const artImages = {
 };
 
 const BOAT_RECT = { x: 410, y: 175, width: 430, height: 865 };
-const PLAYER_RECT = { x: 0, y: 0, width: 32, height: 24 };
+const PLAYER_FRAME_SIZE = 32;
+const PLAYER_DRAW_SCALE = 1.4;
+const PLAYER_IDLE_FRAMES = 4;
+const PLAYER_WALK_FRAMES = 6;
+const PLAYER_WALK_FRAME_SECONDS = 0.11;
 const DOOR_RECT = { x: 700, y: 415, width: 135, height: 145 };
 
 const PROP_RECTS = {
@@ -168,23 +186,27 @@ export function drawPixelScene(renderCtx: CanvasRenderingContext2D, state: BaseS
 }
 
 export function drawPixelPlayer(renderCtx: CanvasRenderingContext2D, state: BaseState): void {
-  const drawWidth = Math.round(22 * BASE_CONSTANTS.GLOBAL_SCALE);
-  const drawHeight = Math.round(24 * BASE_CONSTANTS.GLOBAL_SCALE);
+  const drawWidth = Math.round(PLAYER_FRAME_SIZE * BASE_CONSTANTS.GLOBAL_SCALE * PLAYER_DRAW_SCALE);
+  const drawHeight = Math.round(PLAYER_FRAME_SIZE * BASE_CONSTANTS.GLOBAL_SCALE * PLAYER_DRAW_SCALE);
   const screenX = Math.round(state.player.x - state.camera.x - drawWidth / 2);
   const screenY = Math.round(state.player.y - state.camera.y - drawHeight + BASE_CONSTANTS.PLAYER_SIZE / 2);
+  const source = state.player.isMoving ? artImages.playerWalk : artImages.playerIdle;
+  const frameCount = state.player.isMoving ? PLAYER_WALK_FRAMES : PLAYER_IDLE_FRAMES;
+  const frame = state.player.isMoving ? Math.floor(state.player.animationTime / PLAYER_WALK_FRAME_SECONDS) % frameCount : 0;
+  const sprite = source[state.player.facing];
 
-  if (!artImages.player.complete) {
+  if (!sprite.complete) {
     renderCtx.fillStyle = state.player.color;
     renderCtx.fillRect(screenX, screenY, drawWidth, drawHeight);
     return;
   }
 
   renderCtx.drawImage(
-    artImages.player,
-    PLAYER_RECT.x,
-    PLAYER_RECT.y,
-    PLAYER_RECT.width,
-    PLAYER_RECT.height,
+    sprite,
+    frame * PLAYER_FRAME_SIZE,
+    0,
+    PLAYER_FRAME_SIZE,
+    PLAYER_FRAME_SIZE,
     screenX,
     screenY,
     drawWidth,
@@ -692,6 +714,15 @@ function loadImage(src: string): HTMLImageElement {
   const image = new Image();
   image.src = src;
   return image;
+}
+
+function loadPlayerImages(urls: Record<PlayerDirection, string>): Record<PlayerDirection, HTMLImageElement> {
+  return {
+    down: loadImage(urls.down),
+    left: loadImage(urls.left),
+    right: loadImage(urls.right),
+    up: loadImage(urls.up),
+  };
 }
 
 function tree(tileX: number, tileY: number, treeIndex: number): Omit<WorldSprite, "source"> {

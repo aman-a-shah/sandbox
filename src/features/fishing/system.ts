@@ -336,13 +336,20 @@ function drawFishingStatusText(renderCtx: CanvasRenderingContext2D, state: Fishi
   const x = Math.max(1, Math.round(14 * BASE_CONSTANTS.GLOBAL_SCALE));
   const y = BASE_CONSTANTS.RENDER_HEIGHT - boxHeight - Math.max(1, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE));
 
-  renderCtx.fillStyle = "rgba(7, 15, 31, 0.78)";
-  renderCtx.strokeStyle = "rgba(162, 197, 233, 0.5)";
-  renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
+  renderCtx.fillStyle = "#8b5130";
   renderCtx.fillRect(x, y, boxWidth, boxHeight);
+  renderCtx.fillStyle = "#5f3528";
+  renderCtx.fillRect(
+    x + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    y + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    boxWidth - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    boxHeight - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
+  );
+  renderCtx.strokeStyle = "#4b2b22";
+  renderCtx.lineWidth = 1;
   renderCtx.strokeRect(x, y, boxWidth, boxHeight);
 
-  renderCtx.fillStyle = "#e9f4ff";
+  renderCtx.fillStyle = "#ffe4ae";
   renderCtx.font = FISHING_CONSTANTS.HUD_TEXT_FONT;
   renderCtx.textAlign = "left";
   renderCtx.textBaseline = "middle";
@@ -355,14 +362,22 @@ function drawFishingTensionBar(renderCtx: CanvasRenderingContext2D, state: Fishi
   const x = (BASE_CONSTANTS.RENDER_WIDTH - barWidth) / 2;
   const y = BASE_CONSTANTS.RENDER_HEIGHT - Math.max(1, Math.round(58 * BASE_CONSTANTS.GLOBAL_SCALE));
 
-  renderCtx.fillStyle = "rgba(4, 11, 22, 0.87)";
+  renderCtx.fillStyle = "#8b5130";
   renderCtx.fillRect(
     x - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
     y - Math.max(1, Math.round(22 * BASE_CONSTANTS.GLOBAL_SCALE)),
     barWidth + Math.max(1, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE)),
     barHeight + Math.max(1, Math.round(36 * BASE_CONSTANTS.GLOBAL_SCALE)),
   );
-  renderCtx.strokeStyle = "rgba(150, 182, 214, 0.55)";
+  renderCtx.fillStyle = "#5f3528";
+  renderCtx.fillRect(
+    x - Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    y - Math.max(1, Math.round(19 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    barWidth + Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    barHeight + Math.max(1, Math.round(30 * BASE_CONSTANTS.GLOBAL_SCALE)),
+  );
+  renderCtx.strokeStyle = "#4b2b22";
+  renderCtx.lineWidth = 1;
   renderCtx.strokeRect(
     x - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
     y - Math.max(1, Math.round(22 * BASE_CONSTANTS.GLOBAL_SCALE)),
@@ -376,18 +391,18 @@ function drawFishingTensionBar(renderCtx: CanvasRenderingContext2D, state: Fishi
   const greenZoneWidth = barWidth * (state.session.greenZoneEnd - state.session.greenZoneStart);
   renderCtx.fillStyle = "#29b46f";
   renderCtx.fillRect(greenZoneX, y, greenZoneWidth, barHeight);
-  renderCtx.strokeStyle = "rgba(245, 250, 255, 0.9)";
+  renderCtx.strokeStyle = "#ffe4ae";
   renderCtx.strokeRect(x, y, barWidth, barHeight);
 
   const tensionRatio = clamp(state.session.tension / FISHING_CONSTANTS.TENSION_SNAP, 0, 1);
   const tensionX = x + tensionRatio * barWidth;
-  renderCtx.strokeStyle = "#ffffff";
+  renderCtx.strokeStyle = "#fff3d5";
   renderCtx.beginPath();
   renderCtx.moveTo(tensionX, y - Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)));
   renderCtx.lineTo(tensionX, y + barHeight + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)));
   renderCtx.stroke();
 
-  renderCtx.fillStyle = "#e8f5ff";
+  renderCtx.fillStyle = "#ffe4ae";
   renderCtx.font = FISHING_CONSTANTS.HUD_META_FONT;
   renderCtx.textAlign = "left";
   renderCtx.textBaseline = "alphabetic";

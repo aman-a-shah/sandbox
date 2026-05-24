@@ -83,13 +83,22 @@
             </button>
           </header>
 
-          <p id="recipe-book-selection-status" class="recipe-book-selection-status">Select a recipe from this spread.</p>
-          <div id="recipe-book-grid" class="recipe-book-grid" aria-live="polite"></div>
+          <div class="recipe-book-stage">
+            <button id="recipe-book-prev" class="recipe-book-page-button recipe-book-page-button--prev" type="button" aria-label="Previous recipe spread">
+              ‹
+            </button>
+            <div class="recipe-book-spread">
+              <img class="recipe-book-image" src="./sprites/book_full.png" alt="" aria-hidden="true" />
+              <div id="recipe-book-grid" class="recipe-book-grid" aria-live="polite"></div>
+            </div>
+            <button id="recipe-book-next" class="recipe-book-page-button recipe-book-page-button--next" type="button" aria-label="Next recipe spread">
+              ›
+            </button>
+          </div>
 
           <footer class="recipe-book-controls">
-            <button id="recipe-book-prev" type="button">Prev Page</button>
             <p id="recipe-book-page-indicator" class="recipe-book-page-indicator">Page 1 / 1</p>
-            <button id="recipe-book-next" type="button">Next Page</button>
+            <p id="recipe-book-selection-status" class="recipe-book-selection-status">Select a recipe from this spread.</p>
           </footer>
         </div>
       </section>

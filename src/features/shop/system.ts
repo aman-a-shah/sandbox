@@ -112,12 +112,23 @@ export function renderRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): 
     domRefs.recipeBookPrevButtonEl.disabled = true;
     domRefs.recipeBookNextButtonEl.disabled = true;
     domRefs.recipeBookSelectionStatusEl.textContent = "Catch fish to discover recipes from the generated recipe file.";
+    for (let columnIndex = 0; columnIndex < RECIPE_COLUMNS_PER_SPREAD; columnIndex += 1) {
+      const columnEl = document.createElement("div");
+      columnEl.className = `recipe-column recipe-column--${columnIndex === 0 ? "left" : "right"}`;
+      if (columnIndex === 0) {
+        const emptyEl = document.createElement("p");
+        emptyEl.className = "recipe-book-empty";
+        emptyEl.textContent = "Catch fish to discover recipes.";
+        columnEl.append(emptyEl);
+      }
+      domRefs.recipeBookGridEl.append(columnEl);
+    }
     return;
   }
 
   for (let columnIndex = 0; columnIndex < RECIPE_COLUMNS_PER_SPREAD; columnIndex += 1) {
     const columnEl = document.createElement("div");
-    columnEl.className = "recipe-column";
+    columnEl.className = `recipe-column recipe-column--${columnIndex === 0 ? "left" : "right"}`;
     const columnStart = columnIndex * RECIPES_PER_COLUMN;
     const columnRecipes = pageRecipes.slice(columnStart, columnStart + RECIPES_PER_COLUMN);
 

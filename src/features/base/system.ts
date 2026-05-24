@@ -3,7 +3,7 @@ import type { Vector2 } from "../../core/types/vector";
 import { BASE_CONSTANTS, TERRAIN_COLORS } from "./constants";
 import { drawPixelPlayer, drawPixelScene } from "./art";
 import { isWalkableTile, getTileKind } from "./terrain";
-import type { BaseState, BaseStatusSnapshot, MinimapLayout, SceneId } from "./types";
+import type { BaseState, BaseStatusSnapshot, MinimapLayout, PlayerDirection, SceneId } from "./types";
 
 export function getMovementVector(keysDown: Set<string>, isInputLocked: boolean): Vector2 {
   if (isInputLocked) {
@@ -37,6 +37,31 @@ export function movePlayer(state: BaseState, targetX: number, targetY: number): 
   if (!collidesAt(state, state.player.x, nextY)) {
     state.player.y = nextY;
   }
+}
+
+export function updatePlayerAnimation(state: BaseState, velocity: Vector2, dt: number): void {
+  const isMoving = velocity.x !== 0 || velocity.y !== 0;
+  state.player.isMoving = isMoving;
+
+  if (isMoving) {
+    state.player.facing = getFacingDirection(velocity);
+    state.player.animationTime += dt;
+    return;
+  }
+
+  state.player.animationTime = 0;
+}
+
+function getFacingDirection(velocity: Vector2): PlayerDirection {
+  if (Math.abs(velocity.x) > Math.abs(velocity.y)) {
+    return velocity.x > 0 ? "right" : "left";
+  }
+
+  if (velocity.y !== 0) {
+    return velocity.y > 0 ? "down" : "up";
+  }
+
+  return "down";
 }
 
 function collidesAt(state: BaseState, centerX: number, centerY: number): boolean {
@@ -179,13 +204,27 @@ export function drawPlayer(renderCtx: CanvasRenderingContext2D, state: BaseState
 export function drawMiniMap(renderCtx: CanvasRenderingContext2D, state: BaseState): void {
   const layout = getMinimapLayout();
 
-  renderCtx.fillStyle = "rgba(8, 17, 32, 0.85)";
-  renderCtx.strokeStyle = "rgba(201, 214, 229, 0.4)";
-  renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
+  renderCtx.fillStyle = "#8b5130";
   renderCtx.fillRect(layout.boxX, layout.boxY, layout.boxWidth, layout.boxHeight);
+  renderCtx.fillStyle = "#5f3528";
+  renderCtx.fillRect(
+    layout.boxX + Math.max(1, Math.round(4 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxY + Math.max(1, Math.round(4 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxWidth - Math.max(1, Math.round(8 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxHeight - Math.max(1, Math.round(8 * BASE_CONSTANTS.GLOBAL_SCALE)),
+  );
+  renderCtx.strokeStyle = "#4b2b22";
+  renderCtx.lineWidth = 1;
   renderCtx.strokeRect(layout.boxX, layout.boxY, layout.boxWidth, layout.boxHeight);
+  renderCtx.strokeStyle = "rgba(255, 224, 150, 0.32)";
+  renderCtx.strokeRect(
+    layout.boxX + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxY + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxWidth - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxHeight - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
+  );
 
-  renderCtx.strokeStyle = "rgba(200, 220, 255, 0.4)";
+  renderCtx.strokeStyle = "rgba(255, 212, 135, 0.48)";
   renderCtx.beginPath();
   renderCtx.moveTo(layout.nodes[0].x, layout.nodes[0].y);
   renderCtx.lineTo(layout.nodes[1].x, layout.nodes[1].y);
@@ -195,23 +234,22 @@ export function drawMiniMap(renderCtx: CanvasRenderingContext2D, state: BaseStat
 
   for (const node of layout.nodes) {
     const active = node.sceneId === state.currentSceneId;
-    const nodeScene = state.scenes[node.sceneId];
 
-    renderCtx.fillStyle = active ? lightenColor(nodeScene.background) : nodeScene.background;
-    renderCtx.strokeStyle = active ? "#ffffff" : "rgba(255, 255, 255, 0.45)";
+    renderCtx.fillStyle = active ? "#ffd487" : getSceneMinimapFill(node.sceneId);
+    renderCtx.strokeStyle = active ? "#ffe4ae" : "#4b2b22";
     renderCtx.beginPath();
     renderCtx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
     renderCtx.fill();
     renderCtx.stroke();
 
-    renderCtx.fillStyle = "#0f1723";
+    renderCtx.fillStyle = active ? "#3a2518" : "#fff3d5";
     renderCtx.font = BASE_CONSTANTS.MINIMAP_FONT;
     renderCtx.textAlign = "center";
     renderCtx.textBaseline = "middle";
     renderCtx.fillText(getSceneShortLabel(node.sceneId), node.x, node.y + 0.5 * BASE_CONSTANTS.GLOBAL_SCALE);
   }
 
-  renderCtx.fillStyle = "#e6edf7";
+  renderCtx.fillStyle = "#ffe4ae";
   renderCtx.font = BASE_CONSTANTS.MINIMAP_FONT;
   renderCtx.textAlign = "left";
   renderCtx.fillText(
@@ -219,6 +257,12 @@ export function drawMiniMap(renderCtx: CanvasRenderingContext2D, state: BaseStat
     layout.boxX + Math.max(1, Math.round(8 * BASE_CONSTANTS.GLOBAL_SCALE)),
     layout.boxY + layout.boxHeight - Math.max(1, Math.round(8 * BASE_CONSTANTS.GLOBAL_SCALE)),
   );
+}
+
+function getSceneMinimapFill(sceneId: SceneId): string {
+  if (sceneId === "island") return "#6aa84f";
+  if (sceneId === "ocean") return "#2e78a8";
+  return "#a85b34";
 }
 
 export function getSceneIdFromMinimapClick(screenPoint: Vector2): SceneId | null {
