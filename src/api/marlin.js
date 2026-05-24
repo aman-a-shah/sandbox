@@ -1,5 +1,5 @@
 const { apiConfig } = require("./config.js");
-const { createUrl, requestJson } = require("./http.js");
+const { createUrl, requestJson, requestText } = require("./http.js");
 
 const defaultHeaders = {
   Accept: "application/json",
@@ -16,6 +16,14 @@ const getSpeciesByMarlinId = async (speciesId) => {
   );
 
   return requestJson(url, {
+    headers: defaultHeaders,
+  });
+};
+
+const getAllSpeciesCsv = async () => {
+  const url = createUrl(apiConfig.marlin.baseUrl, "/species");
+
+  return requestText(url, {
     headers: defaultHeaders,
   });
 };
@@ -96,10 +104,20 @@ const getHabitatByJnccCode = async (jnccCode) => {
   });
 };
 
+const getAllHabitatsCsv = async () => {
+  const url = createUrl(apiConfig.marlin.baseUrl, "/habitats");
+
+  return requestText(url, {
+    headers: defaultHeaders,
+  });
+};
+
 module.exports = {
+  getAllSpeciesCsv,
   getSpeciesByMarlinId,
   getSpeciesByAphiaId,
   searchSpeciesByName,
   getSpeciesPressures,
+  getAllHabitatsCsv,
   getHabitatByJnccCode,
 };

@@ -1,18 +1,37 @@
 const { apiConfig, assertApiKey } = require("./config.js");
 const { createUrl, requestJson } = require("./http.js");
 
-const createHeaders = () => {
-  assertApiKey(apiConfig.spoonacular.apiKey, "Spoonacular");
+const resolveSpoonacularConfig = () => {
+  const rapidApiHost = process.env["RECIPE-API-HOST"] || apiConfig.spoonacular.rapidApiHost;
+  const explicitBaseUrl = process.env["SPOONACULAR_BASE_URL"];
+  const apiKey =
+    process.env["SPOONACULAR_API_KEY"] ||
+    process.env["RECIPE-API-KEY"] ||
+    apiConfig.spoonacular.apiKey;
+  const baseUrl =
+    (explicitBaseUrl && explicitBaseUrl.trim()) ||
+    (rapidApiHost ? `https://${rapidApiHost}` : "https://api.spoonacular.com");
 
-  if (apiConfig.spoonacular.rapidApiHost) {
+  return {
+    apiKey,
+    rapidApiHost,
+    baseUrl,
+  };
+};
+
+const createHeaders = () => {
+  const spoonacularConfig = resolveSpoonacularConfig();
+  assertApiKey(spoonacularConfig.apiKey, "Spoonacular");
+
+  if (spoonacularConfig.rapidApiHost) {
     return {
-      "X-RapidAPI-Key": apiConfig.spoonacular.apiKey,
-      "X-RapidAPI-Host": apiConfig.spoonacular.rapidApiHost,
+      "X-RapidAPI-Key": spoonacularConfig.apiKey,
+      "X-RapidAPI-Host": spoonacularConfig.rapidApiHost,
     };
   }
 
   return {
-    "x-api-key": apiConfig.spoonacular.apiKey,
+    "x-api-key": spoonacularConfig.apiKey,
   };
 };
 
@@ -27,7 +46,7 @@ const findRecipesByIngredients = async ({
   }
 
   const url = createUrl(
-    apiConfig.spoonacular.baseUrl,
+    resolveSpoonacularConfig().baseUrl,
     "/recipes/findByIngredients",
     {
       ingredients: ingredients.join(","),
@@ -51,7 +70,7 @@ const getRecipeInformation = async (
   }
 
   const url = createUrl(
-    apiConfig.spoonacular.baseUrl,
+    resolveSpoonacularConfig().baseUrl,
     `/recipes/${recipeId}/information`,
     {
       includeNutrition,
@@ -74,7 +93,7 @@ const getBulkRecipeInformation = async (
   }
 
   const url = createUrl(
-    apiConfig.spoonacular.baseUrl,
+    resolveSpoonacularConfig().baseUrl,
     "/recipes/informationBulk",
     {
       ids: recipeIds.join(","),
@@ -94,17 +113,21 @@ const searchRecipes = async ({
   cuisine,
   diet,
   type,
+  sort,
+  instructionsRequired,
   number = 10,
   addRecipeInformation = true,
   addRecipeNutrition = true,
 } = {}) => {
-  const url = createUrl(apiConfig.spoonacular.baseUrl, "/recipes/complexSearch", {
+  const url = createUrl(resolveSpoonacularConfig().baseUrl, "/recipes/complexSearch", {
     query,
     includeIngredients: includeIngredients?.join(","),
     excludeIngredients: excludeIngredients?.join(","),
     cuisine,
     diet,
     type,
+    sort,
+    instructionsRequired,
     number,
     addRecipeInformation,
     addRecipeNutrition,

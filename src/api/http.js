@@ -25,10 +25,9 @@ const buildQueryString = (params = {}) => {
 const createUrl = (baseUrl, path, params) =>
   `${baseUrl}${path}${buildQueryString(params)}`;
 
-const requestJson = async (url, options = {}) => {
+const requestText = async (url, options = {}) => {
   const response = await fetch(url, {
     headers: {
-      Accept: "application/json",
       ...options.headers,
     },
     ...options,
@@ -42,14 +41,23 @@ const requestJson = async (url, options = {}) => {
   }
 
   const contentType = response.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    return response.json();
-  }
-
   return response.text();
+};
+
+const requestJson = async (url, options = {}) => {
+  const text = await requestText(url, {
+    headers: {
+      Accept: "application/json",
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  return JSON.parse(text);
 };
 
 module.exports = {
   createUrl,
+  requestText,
   requestJson,
 };
