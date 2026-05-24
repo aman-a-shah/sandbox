@@ -1,0 +1,132 @@
+{
+  "generatedAt": "2026-05-24T18:07:43.384Z",
+  "fishRecipeCount": 1,
+  "fishRecipes": [
+    {
+      "fish": {
+        "commonName": "dragonet",
+        "scientificName": "Callionymus lyra",
+        "likelyCatchPercent": 14.4,
+        "observedSpeciesRecordPercent": 16.13,
+        "fishingActivityAssociatedPercent": 13.92,
+        "sizeCategory": "Medium-large(21-50cm)",
+        "averageDepthMeters": 17.5
+      },
+      "notes": {
+        "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
+        "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood or fish ingredients are also present.",
+        "pricing": "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
+        "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
+        "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
+      },
+      "recipeCount": 1,
+      "recipes": [
+        {
+          "requiredFishIngredients": [
+            {
+              "name": "dragonet",
+              "amount": 2,
+              "unit": "fish",
+              "original": "2 dragonet"
+            }
+          ],
+          "recipeId": "fallback-dragonet",
+          "title": "Roasted dragonet with Garlic and Herbs",
+          "sourceUrl": null,
+          "image": null,
+          "readyInMinutes": 32,
+          "servings": 2,
+          "popularityScore": null,
+          "fishUsed": {
+            "commonName": "dragonet",
+            "scientificName": "Callionymus lyra",
+            "ingredientMatched": "dragonet",
+            "quantityWholeFish": 2,
+            "rawAmount": 2,
+            "rawUnit": "fish"
+          },
+          "rarity": "legendary",
+          "estimatedPrice": {
+            "currency": "USD",
+            "total": 25.98,
+            "basePriceFromApi": 14
+          },
+          "nutrition": {
+            "calories": 430,
+            "protein": 32,
+            "fat": 24,
+            "carbohydrates": 8,
+            "sodium": 410,
+            "servingSize": null,
+            "servingUnit": null
+          },
+          "recipe": {
+            "summary": "Fallback generated recipe for dragonet because Spoonacular did not return a matching result.",
+            "dishTypes": [
+              "main course",
+              "dinner"
+            ],
+            "cuisines": [
+              "European"
+            ],
+            "diets": [
+              "pescatarian"
+            ],
+            "instructions": "Season the dragonet, roast until cooked through, and finish with garlic, herbs, and lemon.",
+            "ingredients": [
+              {
+                "name": "2 dragonet fillets",
+                "amount": 2,
+                "unit": "fish",
+                "original": "2 dragonet fillets",
+                "isRequiredFishIngredient": true
+              },
+              {
+                "name": "1 tbsp olive oil",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp olive oil",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "2 cloves garlic",
+                "amount": null,
+                "unit": null,
+                "original": "2 cloves garlic",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 tbsp mixed herbs",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp mixed herbs",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "salt",
+                "amount": null,
+                "unit": null,
+                "original": "salt",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "black pepper",
+                "amount": null,
+                "unit": null,
+                "original": "black pepper",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 lemon",
+                "amount": null,
+                "unit": null,
+                "original": "1 lemon",
+                "isRequiredFishIngredient": false
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
