@@ -23,6 +23,13 @@ export const BASE_CONSTANTS = {
   MINIMAP_FONT: canvasFont(11, GLOBAL_SCALE),
 } as const;
 
+export const SHOP_EXIT_DOOR = {
+  tileX: 4.6,
+  tileY: 14,
+  tileWidth: 2.5,
+  tileHeight: 2.75,
+} as const;
+
 export const TERRAIN_COLORS: Record<TileKind, string> = {
   land: "#4e9c3f",
   water: "#2c78bf",

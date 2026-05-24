@@ -14,14 +14,15 @@ import {
 } from "./data/generated-content";
 import {
   BASE_CONSTANTS,
+  SHOP_EXIT_DOOR,
   centerCameraOnPlayer,
   createBaseState,
   drawCollisionDebugBoxes,
-  drawMiniMap,
   drawPlayer,
   drawSceneBackgroundAndGrid,
   getMovementVector,
-  getSceneIdFromMinimapClick,
+  getIslandDockInteractionTileRect,
+  getIslandHouseDoorInteractionTileRect,
   getTileKind,
   movePlayer,
   renderStatus,
@@ -273,6 +274,7 @@ const saleTableCapacityEl = mustGetElement<HTMLElement>("sale-table-capacity");
 const inventoryDetailsEl = mustGetElement<HTMLDivElement>("inventory-details");
 const inventoryCapacityEl = mustGetElement<HTMLElement>("inventory-capacity");
 const inventoryModeBannerEl = mustGetElement<HTMLElement>("inventory-mode-banner");
+const oceanReturnButtonEl = mustGetElement<HTMLButtonElement>("ocean-return-button");
 
 const workstationPromptEl = mustGetElement<HTMLElement>("workstation-prompt");
 const craftToastEl = mustGetElement<HTMLElement>("craft-toast");
@@ -324,6 +326,16 @@ const travelDebugState: TravelDebugSettings = {
   showHabitatRegionDebug: false,
 };
 const baseState = createBaseState();
+const SHOP_EXIT_RECT: WorldRect = {
+  x: SHOP_EXIT_DOOR.tileX * BASE_CONSTANTS.TILE_SIZE,
+  y: SHOP_EXIT_DOOR.tileY * BASE_CONSTANTS.TILE_SIZE,
+  width: SHOP_EXIT_DOOR.tileWidth * BASE_CONSTANTS.TILE_SIZE,
+  height: SHOP_EXIT_DOOR.tileHeight * BASE_CONSTANTS.TILE_SIZE,
+};
+const SHOP_ENTRY_FROM_ISLAND_WORLD_X = SHOP_EXIT_RECT.x + SHOP_EXIT_RECT.width / 2;
+const SHOP_ENTRY_FROM_ISLAND_WORLD_Y = SHOP_EXIT_RECT.y + SHOP_EXIT_RECT.height / 2;
+const ISLAND_HOUSE_DOOR_RETURN_TILE_X = 16.5;
+const ISLAND_HOUSE_DOOR_RETURN_TILE_Y = 11;
 
 const appState: AppState = {
   base: baseState,
@@ -332,7 +344,7 @@ const appState: AppState = {
   shop: createShopState(),
   travel: createOceanTravelState(baseState),
   economy: {
-    balance: 0,
+    balance: 500,
     bankruptcyThreshold: BANKRUPTCY_LIMIT,
     isGameOver: false,
   },
@@ -396,6 +408,12 @@ window.addEventListener("keydown", (event: KeyboardEvent) => {
   }
 
   if (key === "e") {
+    if (tryExitShopFromDoor()) {
+      return;
+    }
+    if (tryEnterShopFromIslandDoor()) {
+      return;
+    }
     if (tryOpenOceanMapFromDock()) {
       return;
     }
@@ -433,6 +451,9 @@ canvas.addEventListener("click", (event: MouseEvent) => {
 
 inventoryToggleButtonEl.addEventListener("click", () => {
   toggleInventory();
+});
+oceanReturnButtonEl.addEventListener("click", () => {
+  returnToIslandFromOcean();
 });
 
 inventoryCloseButtonEl.addEventListener("click", closeInventory);
@@ -523,8 +544,8 @@ function update(dt: number): void {
 }
 
 function render(): void {
-  drawSceneBackgroundAndGrid(renderCtx, appState.base);
-  drawDockPlaceholder();
+  drawSceneBackgroundAndGrid(renderCtx, appState.base, GAME_CONFIG.debugMode);
+  drawIslandInteractionPlaceholders();
   drawFishingWorldLayer(renderCtx, appState.fishing, {
     currentSceneId: appState.base.currentSceneId,
     toScreenPoint: (worldPoint) => toScreenPoint(appState.base, worldPoint),
@@ -534,9 +555,9 @@ function render(): void {
   drawCustomer(renderCtx);
   drawCollisionDebugBoxes(renderCtx, appState.base, GAME_CONFIG.debugMode);
   drawPlayer(renderCtx, appState.base);
-  drawMiniMap(renderCtx, appState.base);
   drawFishingHud(renderCtx, appState.fishing, appState.base.currentSceneId);
   drawOceanMapOverlay();
+  updateOceanReturnButtonVisibility();
   updateWorldMarkers();
 }
 
@@ -553,19 +574,6 @@ function handleCanvasClick(event: MouseEvent): void {
   }
 
   if (isBlockingOverlayOpen()) {
-    return;
-  }
-
-  const minimapSceneId = getSceneIdFromMinimapClick(clickScreenPoint);
-  if (minimapSceneId !== null) {
-    if (minimapSceneId === "ocean" && appState.base.currentSceneId === "island") {
-      openOceanMap();
-      return;
-    }
-
-    if (minimapSceneId !== appState.base.currentSceneId && !isInputLocked()) {
-      switchScene(minimapSceneId);
-    }
     return;
   }
 
@@ -831,7 +839,7 @@ function switchScene(sceneId: SceneId): void {
 
 function getRodOriginWorld() {
   return {
-    x: appState.base.player.x + appState.base.player.size * 0.2,
+    x: appState.base.player.x,
     y: appState.base.player.y - appState.base.player.size * 0.3,
   };
 }
@@ -1010,8 +1018,20 @@ function updateInteractionPromptVisibility(): void {
     return;
   }
 
+  if (isPlayerAtShopExitDoor()) {
+    workstationPromptEl.textContent = "Press E to return to island";
+    workstationPromptEl.classList.remove("is-hidden");
+    return;
+  }
+
   if (isPlayerOnDock()) {
     workstationPromptEl.textContent = "Press E to open ocean chart";
+    workstationPromptEl.classList.remove("is-hidden");
+    return;
+  }
+
+  if (isPlayerAtIslandHouseDoor()) {
+    workstationPromptEl.textContent = "Press E to enter shop";
     workstationPromptEl.classList.remove("is-hidden");
     return;
   }
@@ -1075,8 +1095,12 @@ function createOceanHabitatRegions(): OceanHabitatRegion[] {
 function createOceanTravelState(state: BaseState): OceanTravelState {
   const islandScene = state.scenes.island;
   const tileSize = BASE_CONSTANTS.TILE_SIZE;
-  const dockRectWidth = Math.max(1, Math.round(tileSize * 4));
-  const dockRectHeight = Math.max(1, Math.round(tileSize * 3));
+  const dockTileRect = getIslandDockInteractionTileRect();
+  const houseDoorTileRect = getIslandHouseDoorInteractionTileRect();
+  const dockRectWidth = Math.max(1, Math.round(tileSize * dockTileRect.width));
+  const dockRectHeight = Math.max(1, Math.round(tileSize * dockTileRect.height));
+  const houseDoorRectWidth = Math.max(1, Math.round(tileSize * houseDoorTileRect.width));
+  const houseDoorRectHeight = Math.max(1, Math.round(tileSize * houseDoorTileRect.height));
   const islandWorldWidth = islandScene.worldCols * tileSize;
   const islandWorldHeight = islandScene.worldRows * tileSize;
   const defaultHabitatId = getDefaultHabitatId();
@@ -1086,10 +1110,16 @@ function createOceanTravelState(state: BaseState): OceanTravelState {
   return {
     isMapOpen: false,
     dockRect: {
-      x: clamp(Math.round(tileSize * 31), 0, Math.max(0, islandWorldWidth - dockRectWidth)),
-      y: clamp(Math.round(tileSize * 12), 0, Math.max(0, islandWorldHeight - dockRectHeight)),
+      x: clamp(Math.round(tileSize * dockTileRect.x), 0, Math.max(0, islandWorldWidth - dockRectWidth)),
+      y: clamp(Math.round(tileSize * dockTileRect.y), 0, Math.max(0, islandWorldHeight - dockRectHeight)),
       width: dockRectWidth,
       height: dockRectHeight,
+    },
+    houseDoorRect: {
+      x: clamp(Math.round(tileSize * houseDoorTileRect.x), 0, Math.max(0, islandWorldWidth - houseDoorRectWidth)),
+      y: clamp(Math.round(tileSize * houseDoorTileRect.y), 0, Math.max(0, islandWorldHeight - houseDoorRectHeight)),
+      width: houseDoorRectWidth,
+      height: houseDoorRectHeight,
     },
     selectedHabitatId,
   };
@@ -1116,6 +1146,82 @@ function isPlayerOnDock(): boolean {
     },
     appState.travel.dockRect,
   );
+}
+
+function isPlayerAtIslandHouseDoor(): boolean {
+  if (appState.base.currentSceneId !== "island") {
+    return false;
+  }
+
+  return isPointInsideRect(
+    {
+      x: appState.base.player.x,
+      y: appState.base.player.y,
+    },
+    appState.travel.houseDoorRect,
+  );
+}
+
+function isPlayerAtShopExitDoor(): boolean {
+  if (appState.base.currentSceneId !== "shop") {
+    return false;
+  }
+
+  return isPointInsideRect(
+    {
+      x: appState.base.player.x,
+      y: appState.base.player.y,
+    },
+    SHOP_EXIT_RECT,
+  );
+}
+
+function placePlayerAtSceneTile(tileX: number, tileY: number): void {
+  const tile = BASE_CONSTANTS.TILE_SIZE;
+  appState.base.player.x = tileX * tile + tile / 2;
+  appState.base.player.y = tileY * tile + tile / 2;
+  centerCameraOnPlayer(appState.base);
+}
+
+function placePlayerAtWorldPoint(worldX: number, worldY: number): void {
+  appState.base.player.x = worldX;
+  appState.base.player.y = worldY;
+  centerCameraOnPlayer(appState.base);
+}
+
+function tryExitShopFromDoor(): boolean {
+  if (!isPlayerAtShopExitDoor()) {
+    return false;
+  }
+
+  switchScene("island");
+  placePlayerAtSceneTile(ISLAND_HOUSE_DOOR_RETURN_TILE_X, ISLAND_HOUSE_DOOR_RETURN_TILE_Y);
+  updateInteractionPromptVisibility();
+  return true;
+}
+
+function tryEnterShopFromIslandDoor(): boolean {
+  if (!isPlayerAtIslandHouseDoor()) {
+    return false;
+  }
+
+  switchScene("shop");
+  placePlayerAtWorldPoint(SHOP_ENTRY_FROM_ISLAND_WORLD_X, SHOP_ENTRY_FROM_ISLAND_WORLD_Y);
+  updateInteractionPromptVisibility();
+  return true;
+}
+
+function returnToIslandFromOcean(): void {
+  if (appState.base.currentSceneId !== "ocean" || appState.economy.isGameOver) {
+    return;
+  }
+
+  switchScene("island");
+  placePlayerAtWorldPoint(
+    appState.travel.dockRect.x + appState.travel.dockRect.width / 2,
+    appState.travel.dockRect.y + appState.travel.dockRect.height / 2,
+  );
+  updateInteractionPromptVisibility();
 }
 
 function getExpandedMapLayout(): ExpandedMapLayout {
@@ -1229,55 +1335,60 @@ function resolveOceanHabitatFromChartPoint(clickScreenPoint: Vector2, layout: Ex
   return nearestFallbackRoute;
 }
 
-function drawDockPlaceholder(): void {
-  if (appState.base.currentSceneId !== "island") {
+function drawIslandInteractionPlaceholders(): void {
+  if (!GAME_CONFIG.debugMode || appState.base.currentSceneId !== "island") {
     return;
   }
 
-  const dockRect = appState.travel.dockRect;
-  const dockTopLeft = toScreenPoint(appState.base, { x: dockRect.x, y: dockRect.y });
-  const dockInset = Math.max(1, Math.round(2 * BASE_CONSTANTS.GLOBAL_SCALE));
+  drawInteractionPlaceholder(
+    appState.travel.houseDoorRect,
+    "House door: stand here + press E",
+    "rgba(70, 90, 142, 0.95)",
+    "rgba(199, 226, 255, 0.95)",
+    "rgba(32, 47, 87, 0.75)",
+  );
+  drawInteractionPlaceholder(
+    appState.travel.dockRect,
+    "Dock: stand here + press E",
+    "rgba(101, 72, 43, 0.95)",
+    "rgba(249, 217, 159, 0.95)",
+    "rgba(67, 46, 26, 0.75)",
+  );
+}
 
-  renderCtx.fillStyle = "#8b5130";
-  renderCtx.fillRect(dockTopLeft.x, dockTopLeft.y, dockRect.width, dockRect.height);
+function drawInteractionPlaceholder(
+  rect: WorldRect,
+  label: string,
+  fillColor: string,
+  borderColor: string,
+  innerFillColor: string,
+): void {
+  const rectTopLeft = toScreenPoint(appState.base, { x: rect.x, y: rect.y });
+  const rectInset = Math.max(1, Math.round(2 * BASE_CONSTANTS.GLOBAL_SCALE));
 
-  renderCtx.strokeStyle = "#4b2b22";
+  renderCtx.fillStyle = fillColor;
+  renderCtx.fillRect(rectTopLeft.x, rectTopLeft.y, rect.width, rect.height);
+
+  renderCtx.strokeStyle = borderColor;
   renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
-  renderCtx.strokeRect(dockTopLeft.x, dockTopLeft.y, dockRect.width, dockRect.height);
+  renderCtx.strokeRect(rectTopLeft.x, rectTopLeft.y, rect.width, rect.height);
 
-  renderCtx.fillStyle = "#5f3528";
+  renderCtx.fillStyle = innerFillColor;
   renderCtx.fillRect(
-    dockTopLeft.x + dockInset,
-    dockTopLeft.y + dockInset,
-    dockRect.width - dockInset * 2,
-    dockRect.height - dockInset * 2,
+    rectTopLeft.x + rectInset,
+    rectTopLeft.y + rectInset,
+    rect.width - rectInset * 2,
+    rect.height - rectInset * 2,
   );
 
-  const labelWidth = Math.max(1, Math.round(228 * BASE_CONSTANTS.GLOBAL_SCALE));
-  const labelHeight = Math.max(1, Math.round(22 * BASE_CONSTANTS.GLOBAL_SCALE));
-  const labelX = Math.round(dockTopLeft.x + dockRect.width / 2 - labelWidth / 2);
-  const labelY = Math.round(dockTopLeft.y - labelHeight - Math.max(5, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)));
-
-  renderCtx.fillStyle = "#8b5130";
-  renderCtx.fillRect(labelX, labelY, labelWidth, labelHeight);
-  renderCtx.fillStyle = "#5f3528";
-  renderCtx.fillRect(
-    labelX + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
-    labelY + Math.max(1, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)),
-    labelWidth - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
-    labelHeight - Math.max(1, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)),
-  );
-  renderCtx.strokeStyle = "#4b2b22";
-  renderCtx.strokeRect(labelX, labelY, labelWidth, labelHeight);
-
-  renderCtx.fillStyle = "#ffe4ae";
+  renderCtx.fillStyle = "#f5e4c1";
   renderCtx.font = `${Math.max(10, Math.round(11 * BASE_CONSTANTS.GLOBAL_SCALE))}px monospace`;
   renderCtx.textAlign = "center";
   renderCtx.textBaseline = "middle";
   renderCtx.fillText(
-    "Dock: stand here + press E",
-    labelX + labelWidth / 2,
-    labelY + labelHeight / 2 + 0.5 * BASE_CONSTANTS.GLOBAL_SCALE,
+    label,
+    rectTopLeft.x + rect.width / 2,
+    rectTopLeft.y - Math.max(3, Math.round(4 * BASE_CONSTANTS.GLOBAL_SCALE)),
   );
 }
 
@@ -1338,6 +1449,19 @@ function drawOceanMapOverlay(): void {
       layout.boxY + layout.boxHeight - Math.max(1, Math.round(32 * BASE_CONSTANTS.GLOBAL_SCALE)),
     );
   }
+}
+
+function updateOceanReturnButtonVisibility(): void {
+  const shouldShow =
+    appState.base.currentSceneId === "ocean" &&
+    !appState.travel.isMapOpen &&
+    !appState.inventory.isOpen &&
+    !appState.shop.recipeBook.isOpen &&
+    !appState.economy.isGameOver;
+
+  oceanReturnButtonEl.classList.toggle("is-hidden", !shouldShow);
+  oceanReturnButtonEl.setAttribute("aria-hidden", String(!shouldShow));
+  oceanReturnButtonEl.disabled = !shouldShow;
 }
 
 function drawImageContained(image: HTMLImageElement, x: number, y: number, width: number, height: number): void {

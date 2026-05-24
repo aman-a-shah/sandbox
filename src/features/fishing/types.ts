@@ -18,6 +18,10 @@ export interface FishingSession {
   tension: number;
   greenZoneStart: number;
   greenZoneEnd: number;
+  greenZoneWidth: number;
+  greenZoneCenter: number;
+  greenZoneTargetCenter: number;
+  greenZoneRetargetTimer: number;
   catchProgress: number;
   statusText: string;
 }

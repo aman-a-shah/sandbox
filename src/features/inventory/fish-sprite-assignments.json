@@ -1,0 +1,110 @@
+[
+  {
+    "fishId": "ballan-wrasse",
+    "spriteId": "sunstripe-snapper"
+  },
+  {
+    "fishId": "bib",
+    "spriteId": "mist-fin-cod"
+  },
+  {
+    "fishId": "blue-skate",
+    "spriteId": "mist-fin-cod"
+  },
+  {
+    "fishId": "cepelan",
+    "spriteId": "ember-tail-perch"
+  },
+  {
+    "fishId": "common-dragonet",
+    "spriteId": "sunstripe-snapper"
+  },
+  {
+    "fishId": "common-goby",
+    "spriteId": "jade-raylet"
+  },
+  {
+    "fishId": "couch-s-goby",
+    "spriteId": "kelpback-bass"
+  },
+  {
+    "fishId": "crownfin-oracle",
+    "spriteId": "crownfin-oracle"
+  },
+  {
+    "fishId": "cuckoo-wrasse",
+    "spriteId": "ember-tail-perch"
+  },
+  {
+    "fishId": "dragonet",
+    "spriteId": "ruby-lantern-koi"
+  },
+  {
+    "fishId": "ember-tail-perch",
+    "spriteId": "ember-tail-perch"
+  },
+  {
+    "fishId": "european-plaice",
+    "spriteId": "ember-tail-perch"
+  },
+  {
+    "fishId": "frost-gill-trout",
+    "spriteId": "frost-gill-trout"
+  },
+  {
+    "fishId": "giant-goby",
+    "spriteId": "jade-raylet"
+  },
+  {
+    "fishId": "goldsinny",
+    "spriteId": "jade-raylet"
+  },
+  {
+    "fishId": "green-pollack",
+    "spriteId": "ruby-lantern-koi"
+  },
+  {
+    "fishId": "jade-raylet",
+    "spriteId": "jade-raylet"
+  },
+  {
+    "fishId": "kelpback-bass",
+    "spriteId": "kelpback-bass"
+  },
+  {
+    "fishId": "leopard-spotted-goby",
+    "spriteId": "mist-fin-cod"
+  },
+  {
+    "fishId": "mist-fin-cod",
+    "spriteId": "mist-fin-cod"
+  },
+  {
+    "fishId": "moon-reef-bream",
+    "spriteId": "moon-reef-bream"
+  },
+  {
+    "fishId": "ruby-lantern-koi",
+    "spriteId": "ruby-lantern-koi"
+  },
+  {
+    "fishId": "sand-goby",
+    "spriteId": "kelpback-bass"
+  },
+  {
+    "fishId": "seahorse",
+    "spriteId": "sunstripe-snapper"
+  },
+  {
+    "fishId": "storm-glass-eel",
+    "spriteId": "storm-glass-eel"
+  },
+  {
+    "fishId": "sunstripe-snapper",
+    "spriteId": "sunstripe-snapper"
+  },
+  {
+    "fishId": "tompot-blenny",
+    "spriteId": "storm-glass-eel"
+  }
+]

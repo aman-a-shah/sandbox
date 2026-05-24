@@ -122,6 +122,36 @@ body {
   height: 3px;
 }
 
+.ocean-return-button {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 22;
+  border: 3px solid var(--wood-dark);
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: var(--cream);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background:
+    linear-gradient(180deg, #4f9ec7 0%, #2f6f97 64%, #1f4f70 100%);
+  box-shadow:
+    0 4px 0 #15364d,
+    inset 0 0 0 2px rgba(220, 247, 255, 0.35);
+  cursor: pointer;
+  transform: scale(var(--global-scale));
+  transform-origin: top right;
+}
+
+.ocean-return-button:hover {
+  filter: brightness(1.08);
+}
+
+.ocean-return-button:active {
+  transform: translateY(1px) scale(var(--global-scale));
+}
+
 .controls-overlay {
   position: fixed;
   top: 12px;
@@ -556,18 +586,24 @@ body {
 }
 
 .fish-sprite {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  background-repeat: no-repeat;
+  object-fit: contain;
 }
 
 .fish-sprite--slot {
   align-self: center;
   justify-self: center;
+  width: 64px;
+  height: 34px;
 }
 
 .fish-sprite--details {
+  width: 170px;
+  height: 90px;
   transform: scale(var(--global-scale));
   transform-origin: center center;
 }
@@ -1033,6 +1069,13 @@ body {
 }
 
 @media (max-width: 700px) {
+  .ocean-return-button {
+    top: 12px;
+    right: 12px;
+    font-size: 0.82rem;
+    padding: 8px 12px;
+  }
+
   .controls-overlay {
     top: 74px;
     left: 12px;

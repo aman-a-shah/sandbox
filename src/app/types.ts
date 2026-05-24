@@ -13,6 +13,7 @@ export interface WorldRect {
 export interface OceanTravelState {
   isMapOpen: boolean;
   dockRect: WorldRect;
+  houseDoorRect: WorldRect;
   selectedHabitatId: string | null;
 }
 

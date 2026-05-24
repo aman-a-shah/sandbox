@@ -141,7 +141,11 @@ export function switchScene(state: BaseState, sceneId: SceneId): void {
   centerCameraOnPlayer(state);
 }
 
-export function drawSceneBackgroundAndGrid(renderCtx: CanvasRenderingContext2D, state: BaseState): void {
+export function drawSceneBackgroundAndGrid(
+  renderCtx: CanvasRenderingContext2D,
+  state: BaseState,
+  debugMode: boolean,
+): void {
   const scene = state.scenes[state.currentSceneId];
   const worldWidthPx = scene.worldCols * BASE_CONSTANTS.TILE_SIZE;
   const worldHeightPx = scene.worldRows * BASE_CONSTANTS.TILE_SIZE;
@@ -160,12 +164,14 @@ export function drawSceneBackgroundAndGrid(renderCtx: CanvasRenderingContext2D, 
   renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
   drawPixelScene(renderCtx, state);
 
-  renderCtx.strokeStyle = "rgba(0, 0, 0, 0.35)";
-  renderCtx.strokeRect(-state.camera.x, -state.camera.y, worldWidthPx, worldHeightPx);
+  if (debugMode) {
+    renderCtx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+    renderCtx.strokeRect(-state.camera.x, -state.camera.y, worldWidthPx, worldHeightPx);
+  }
 }
 
 export function drawCollisionDebugBoxes(renderCtx: CanvasRenderingContext2D, state: BaseState, debugMode: boolean): void {
-  if (!debugMode || state.currentSceneId !== "shop") {
+  if (!debugMode || (state.currentSceneId !== "shop" && state.currentSceneId !== "island" && state.currentSceneId !== "ocean")) {
     return;
   }
 

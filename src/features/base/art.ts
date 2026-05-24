@@ -1,4 +1,4 @@
-import { BASE_CONSTANTS } from "./constants";
+import { BASE_CONSTANTS, SHOP_EXIT_DOOR } from "./constants";
 import { getTileKind, isRestaurantInteriorTile } from "./terrain";
 import type { BaseState, PlayerDirection, SceneId } from "./types";
 
@@ -292,10 +292,10 @@ function drawDoorSprite(renderCtx: CanvasRenderingContext2D, state: BaseState): 
   }
 
   const tile = BASE_CONSTANTS.TILE_SIZE;
-  const doorWidth = tile * 2.5;
-  const doorHeight = tile * 2.75;
-  const doorX = 7.35 * tile - state.camera.x;
-  const doorY = 15.1 * tile - state.camera.y;
+  const doorWidth = tile * SHOP_EXIT_DOOR.tileWidth;
+  const doorHeight = tile * SHOP_EXIT_DOOR.tileHeight;
+  const doorX = SHOP_EXIT_DOOR.tileX * tile - state.camera.x;
+  const doorY = SHOP_EXIT_DOOR.tileY * tile - state.camera.y;
 
   renderCtx.drawImage(
     artImages.door,

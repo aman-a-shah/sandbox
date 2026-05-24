@@ -1,37 +1,7 @@
 import { escapeHtml } from "../../core/utils";
-import type { InventorySlot } from "./types";
+import { getFishSpriteManifestEntry, getFishSpritePublicPath } from "./fish-sprites";
 import { getInventoryUsedSlots, getSelectedInventoryItem, selectDiscoveredFish, selectInventorySlot } from "./system";
-import type { InventoryDomRefs, InventoryState } from "./types";
-
-const fishSheetUrl = "/sprites-clean/fish_transparent.png";
-const fishSheetImage = new Image();
-fishSheetImage.src = fishSheetUrl;
-
-interface FishSpriteRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-const NAMED_FISH_SPRITES: Record<string, FishSpriteRect> = {
-  "sunstripe-snapper": { x: 70, y: 55, width: 190, height: 95 },
-  "mist-fin-cod": { x: 1000, y: 170, width: 180, height: 85 },
-  "ember-tail-perch": { x: 1225, y: 55, width: 190, height: 100 },
-  "moon-reef-bream": { x: 770, y: 295, width: 180, height: 90 },
-  "kelpback-bass": { x: 295, y: 295, width: 190, height: 90 },
-  "jade-raylet": { x: 60, y: 505, width: 190, height: 105 },
-  "storm-glass-eel": { x: 565, y: 690, width: 125, height: 75 },
-  "frost-gill-trout": { x: 555, y: 500, width: 190, height: 80 },
-  "ruby-lantern-koi": { x: 1010, y: 505, width: 190, height: 80 },
-  "crownfin-oracle": { x: 55, y: 670, width: 250, height: 80 },
-};
-
-const GENERIC_FISH_SPRITES: FishSpriteRect[] = Object.values(NAMED_FISH_SPRITES);
-
-fishSheetImage.addEventListener("load", () => {
-  hydrateFishSprites(document.body);
-});
+import type { InventoryDomRefs, InventorySlot, InventoryState } from "./types";
 
 export function syncInventoryOverlay(domRefs: InventoryDomRefs, state: InventoryState): void {
   domRefs.overlayEl.classList.toggle("is-hidden", !state.isOpen);
@@ -112,8 +82,8 @@ export function renderInventory(
   }
 
   domRefs.gridEl.classList.toggle("inventory-grid--discovered", state.activeView === "discovered");
-  hydrateFishSprites(domRefs.gridEl);
-  hydrateFishSprites(domRefs.saleGridEl);
+  hydrateFishSpriteFallbacks(domRefs.gridEl);
+  hydrateFishSpriteFallbacks(domRefs.saleGridEl);
 
   renderInventoryDetails(domRefs, state);
 }
@@ -202,63 +172,44 @@ export function renderInventoryDetails(domRefs: InventoryDomRefs, state: Invento
     `<dt>Distribution</dt><dd>${escapeHtml(distributionText)}</dd>`,
     "</dl>",
   ].join("");
-  hydrateFishSprites(domRefs.detailsEl);
+  hydrateFishSpriteFallbacks(domRefs.detailsEl);
 }
 
 function getFishSpriteMarkup(fishId: string, variant: "slot" | "details", fallbackText: string): string {
-  const sprite = resolveFishSprite(fishId);
+  const sprite = getFishSpriteManifestEntry(fishId);
   if (!sprite) {
     return escapeHtml(fallbackText);
   }
 
-  return `<span class=\"fish-sprite fish-sprite--${variant}\" data-fish-id=\"${escapeHtml(fishId)}\" data-variant=\"${variant}\" aria-label=\"${escapeHtml(fallbackText)}\">${escapeHtml(fallbackText)}</span>`;
+  const spritePath = getFishSpritePublicPath(sprite);
+  const escapedFallbackText = escapeHtml(fallbackText);
+  return (
+    `<img class=\"fish-sprite fish-sprite--${variant}\" ` +
+    `src=\"${escapeHtml(spritePath)}\" ` +
+    `alt=\"${escapedFallbackText}\" ` +
+    `data-fallback-text=\"${escapedFallbackText}\" ` +
+    `loading=\"lazy\" decoding=\"async\">`
+  );
 }
 
-function hydrateFishSprites(rootEl: HTMLElement): void {
-  const spriteEls = Array.from(rootEl.querySelectorAll<HTMLElement>(".fish-sprite[data-fish-id]"));
+function hydrateFishSpriteFallbacks(rootEl: HTMLElement): void {
+  const spriteEls = Array.from(rootEl.querySelectorAll<HTMLImageElement>("img.fish-sprite[data-fallback-text]"));
   for (const spriteEl of spriteEls) {
-    const fishId = spriteEl.dataset.fishId;
-    const variant = spriteEl.dataset.variant === "details" ? "details" : "slot";
-    const sprite = fishId ? resolveFishSprite(fishId) : null;
-    if (!sprite || !fishSheetImage.complete) {
+    if (spriteEl.dataset.fallbackBound === "true") {
       continue;
     }
 
-    const scale = variant === "slot" ? 0.32 : 0.72;
-    const canvas = document.createElement("canvas");
-    canvas.className = spriteEl.className;
-    canvas.width = Math.round(sprite.width * scale);
-    canvas.height = Math.round(sprite.height * scale);
-    const context = canvas.getContext("2d");
-    if (!context) {
-      continue;
-    }
+    spriteEl.dataset.fallbackBound = "true";
+    spriteEl.addEventListener("error", () => {
+      const fallbackText = spriteEl.dataset.fallbackText;
+      if (!fallbackText) {
+        return;
+      }
 
-    context.imageSmoothingEnabled = false;
-    context.drawImage(fishSheetImage, sprite.x, sprite.y, sprite.width, sprite.height, 0, 0, canvas.width, canvas.height);
-    spriteEl.replaceWith(canvas);
+      const fallbackEl = document.createElement("span");
+      fallbackEl.className = spriteEl.className;
+      fallbackEl.textContent = fallbackText;
+      spriteEl.replaceWith(fallbackEl);
+    });
   }
-}
-
-function resolveFishSprite(fishId: string): FishSpriteRect | null {
-  const namedSprite = NAMED_FISH_SPRITES[fishId];
-  if (namedSprite) {
-    return namedSprite;
-  }
-
-  if (GENERIC_FISH_SPRITES.length === 0) {
-    return null;
-  }
-
-  const fallbackIndex = Math.abs(hashString(fishId)) % GENERIC_FISH_SPRITES.length;
-  return GENERIC_FISH_SPRITES[fallbackIndex];
-}
-
-function hashString(value: string): number {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(index);
-    hash |= 0;
-  }
-  return hash;
 }

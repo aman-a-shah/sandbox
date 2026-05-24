@@ -159,37 +159,32 @@ function updateFishingBiteWindow(state: FishingState, dt: number, getRodOriginWo
 
 function beginReelingPhase(state: FishingState): void {
   const zoneWidth = randomBetween(FISHING_CONSTANTS.GREEN_ZONE_WIDTH_MIN, FISHING_CONSTANTS.GREEN_ZONE_WIDTH_MAX);
-  const zoneStartMin = FISHING_CONSTANTS.GREEN_ZONE_EDGE_PADDING;
-  const zoneStartMax = 1 - FISHING_CONSTANTS.GREEN_ZONE_EDGE_PADDING - zoneWidth;
-  const zoneStart = randomBetween(zoneStartMin, Math.max(zoneStartMin, zoneStartMax));
+  const zoneCenter = FISHING_CONSTANTS.GREEN_ZONE_EDGE_PADDING + zoneWidth / 2;
 
   state.session.phase = "reeling";
   state.session.waveTimer = 0;
   state.session.fishPullTimer = 0;
   state.session.burstStrength = 0;
-  state.session.tension = 0.1;
-  state.session.greenZoneStart = zoneStart;
-  state.session.greenZoneEnd = clamp(zoneStart + zoneWidth, 0, 1);
+  state.session.tension = 0;
+  state.session.greenZoneWidth = zoneWidth;
+  state.session.greenZoneCenter = zoneCenter;
+  state.session.greenZoneTargetCenter = zoneCenter;
+  state.session.greenZoneRetargetTimer = randomBetween(
+    FISHING_CONSTANTS.GREEN_ZONE_RETARGET_MIN,
+    FISHING_CONSTANTS.GREEN_ZONE_RETARGET_MAX,
+  );
+  updateGreenZoneBounds(state);
   state.session.catchProgress = 0;
   state.session.statusText = "Hold mouse to reel. Keep the marker in green.";
 }
 
 function updateFishingReeling(state: FishingState, dt: number, dependencies: FishingUpdateDependencies): void {
   state.session.waveTimer += dt;
-  state.session.fishPullTimer += dt;
   updateFloatingBobber(state, false, dependencies.getRodOriginWorld);
+  updateGreenZoneMotion(state, dt);
 
-  if (Math.random() < FISHING_CONSTANTS.PULL_BURST_CHANCE * dt) {
-    state.session.burstStrength = randomBetween(FISHING_CONSTANTS.PULL_BURST_MIN, FISHING_CONSTANTS.PULL_BURST_MAX);
-  }
-
-  state.session.burstStrength = Math.max(0, state.session.burstStrength - dt * FISHING_CONSTANTS.PULL_BURST_DRAIN);
-
-  const driftPull =
-    Math.sin(state.session.fishPullTimer * 4.6) * FISHING_CONSTANTS.PULL_WAVE +
-    Math.sin(state.session.fishPullTimer * 9.4) * 0.07;
   const reelTensionDelta = state.isReelHeld ? FISHING_CONSTANTS.TENSION_GAIN : -FISHING_CONSTANTS.TENSION_RELEASE;
-  state.session.tension += (reelTensionDelta + driftPull + state.session.burstStrength) * dt;
+  state.session.tension += reelTensionDelta * dt;
   state.session.tension = clamp(state.session.tension, 0, 1.35);
 
   if (state.session.tension >= FISHING_CONSTANTS.TENSION_SNAP) {
@@ -199,11 +194,7 @@ function updateFishingReeling(state: FishingState, dt: number, dependencies: Fis
 
   const tensionRatio = clamp(state.session.tension / FISHING_CONSTANTS.TENSION_SNAP, 0, 1);
   const inGreenZone = tensionRatio >= state.session.greenZoneStart && tensionRatio <= state.session.greenZoneEnd;
-  const progressDelta = inGreenZone
-    ? state.isReelHeld
-      ? FISHING_CONSTANTS.PROGRESS_GAIN_IN_GREEN
-      : -FISHING_CONSTANTS.PROGRESS_DECAY_IDLE
-    : -FISHING_CONSTANTS.PROGRESS_LOSS_IN_RED;
+  const progressDelta = inGreenZone ? FISHING_CONSTANTS.PROGRESS_GAIN_IN_GREEN : -FISHING_CONSTANTS.PROGRESS_LOSS_IN_RED;
   state.session.catchProgress = clamp(
     state.session.catchProgress + progressDelta * dt,
     0,
@@ -220,6 +211,65 @@ function updateFishingReeling(state: FishingState, dt: number, dependencies: Fis
     dependencies.onCatchAdded();
     setFishingOutcome(state, "success", `Caught: ${catchResult.fishName}!`);
   }
+}
+
+function updateGreenZoneMotion(state: FishingState, dt: number): void {
+  state.session.greenZoneRetargetTimer -= dt;
+  if (state.session.greenZoneRetargetTimer <= 0) {
+    state.session.greenZoneTargetCenter = chooseRandomGreenZoneCenter(state.session.greenZoneWidth);
+    state.session.greenZoneRetargetTimer = randomBetween(
+      FISHING_CONSTANTS.GREEN_ZONE_RETARGET_MIN,
+      FISHING_CONSTANTS.GREEN_ZONE_RETARGET_MAX,
+    );
+  }
+
+  state.session.greenZoneCenter = moveTowards(
+    state.session.greenZoneCenter,
+    state.session.greenZoneTargetCenter,
+    FISHING_CONSTANTS.GREEN_ZONE_MOVE_SPEED * dt,
+  );
+  updateGreenZoneBounds(state);
+}
+
+function updateGreenZoneBounds(state: FishingState): void {
+  const safeWidth = clamp(
+    state.session.greenZoneWidth,
+    0.01,
+    1 - FISHING_CONSTANTS.GREEN_ZONE_EDGE_PADDING * 2,
+  );
+  const bounds = getGreenZoneCenterBounds(safeWidth);
+  state.session.greenZoneWidth = safeWidth;
+  state.session.greenZoneCenter = clamp(state.session.greenZoneCenter, bounds.min, bounds.max);
+  state.session.greenZoneTargetCenter = clamp(state.session.greenZoneTargetCenter, bounds.min, bounds.max);
+  state.session.greenZoneStart = state.session.greenZoneCenter - safeWidth / 2;
+  state.session.greenZoneEnd = state.session.greenZoneCenter + safeWidth / 2;
+}
+
+function chooseRandomGreenZoneCenter(zoneWidth: number): number {
+  const safeWidth = clamp(
+    zoneWidth,
+    0.01,
+    1 - FISHING_CONSTANTS.GREEN_ZONE_EDGE_PADDING * 2,
+  );
+  const bounds = getGreenZoneCenterBounds(safeWidth);
+  return randomBetween(bounds.min, Math.max(bounds.min, bounds.max));
+}
+
+function getGreenZoneCenterBounds(zoneWidth: number): { min: number; max: number } {
+  const halfWidth = zoneWidth / 2;
+  return {
+    min: FISHING_CONSTANTS.GREEN_ZONE_EDGE_PADDING + halfWidth,
+    max: 1 - FISHING_CONSTANTS.GREEN_ZONE_EDGE_PADDING - halfWidth,
+  };
+}
+
+function moveTowards(current: number, target: number, maxDelta: number): number {
+  const delta = target - current;
+  if (Math.abs(delta) <= maxDelta) {
+    return target;
+  }
+
+  return current + Math.sign(delta) * maxDelta;
 }
 
 function updateFloatingBobber(state: FishingState, withBiteDip: boolean, getRodOriginWorld: () => Vector2): void {
@@ -284,7 +334,7 @@ export function drawFishingWorldLayer(
   const bobberScreen = dependencies.toScreenPoint(state.session.bobberPosition);
   const rodOriginScreen = dependencies.toScreenPoint(dependencies.getRodOriginWorld());
 
-  renderCtx.strokeStyle = "rgba(247, 250, 255, 0.9)";
+  renderCtx.strokeStyle = "#000000";
   renderCtx.lineWidth = FISHING_CONSTANTS.LINE_WIDTH;
   renderCtx.beginPath();
   renderCtx.moveTo(rodOriginScreen.x, rodOriginScreen.y);

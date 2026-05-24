@@ -16,6 +16,10 @@ export function createInitialFishingSession(): FishingSession {
     tension: 0,
     greenZoneStart: 0.35,
     greenZoneEnd: 0.57,
+    greenZoneWidth: 0.22,
+    greenZoneCenter: 0.46,
+    greenZoneTargetCenter: 0.46,
+    greenZoneRetargetTimer: 0,
     catchProgress: 0,
     statusText: "Click open water to cast.",
   };

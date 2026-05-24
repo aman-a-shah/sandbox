@@ -1,76 +1,212 @@
 import type { SceneId, TerrainGrid, TileKind } from "./types";
 
-function createFilledTerrain(cols: number, rows: number, fill: TileKind): TerrainGrid {
-  return Array.from({ length: rows }, () => Array.from({ length: cols }, () => fill));
+const ISLAND_COLLISION_MAP = `
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+#######################......###############
+#######################.....################
+#######################.....################
+#######################.......##############
+################%%#####........#############
+##############...................###########
+##############......................########
+#############..............##.........######
+#########..................#######...$$#####
+#########..................#########.$$#####
+#########....................###############
+#########....................###############
+#########....................###############
+##########.....#####........################
+######################......################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+`;
+
+const SHOP_COLLISION_MAP = `
+############################################
+############################################
+############################################
+############################################
+############################........########
+############################........########
+############################........########
+############################...........#####
+##############################.........#####
+#######.........###....#######.........#####
+#######................##...#..........#####
+#######................##..##......#...#####
+#######................##.####....###..#####
+#####.....##########........#.....###..#####
+#####.....##########...............#...#####
+#####.....##########...................#####
+###################....................#####
+###################....................#####
+###################.........#######....#####
+#####################.......#######....#####
+#####################.......#######....#####
+#####################..................#####
+##########################.............#####
+##########################.............#####
+############################################
+############################################
+############################################
+############################################
+`;
+
+const BOAT_COLLISION_MAP = `
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+###################.......##################
+##################........##################
+##################.......###################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+############################################
+`;
+
+function parseCollisionMapRows(mapName: string, map: string): string[] {
+  const mapRows = map.trim().split("\n");
+  const expectedWidth = mapRows[0]?.length ?? 0;
+  if (expectedWidth === 0) {
+    throw new Error(`${mapName} must contain at least one row.`);
+  }
+
+  for (const [index, row] of mapRows.entries()) {
+    if (row.length !== expectedWidth) {
+      throw new Error(
+        `${mapName} has inconsistent row widths: row 1 is ${expectedWidth}, row ${index + 1} is ${row.length}.`,
+      );
+    }
+  }
+
+  return mapRows;
+}
+
+function createTerrainFromCollisionMap(
+  mapName: string,
+  map: string,
+  cols: number,
+  rows: number,
+  walkableTileKind: TileKind = "plain",
+): TerrainGrid {
+  const mapRows = parseCollisionMapRows(mapName, map);
+  if (mapRows.length !== rows) {
+    throw new Error(`${mapName} row count mismatch: expected ${rows}, got ${mapRows.length}.`);
+  }
+
+  return mapRows.map((row, rowIndex) => {
+    if (row.length !== cols) {
+      throw new Error(
+        `${mapName} column count mismatch at row ${rowIndex + 1}: expected ${cols}, got ${row.length}.`,
+      );
+    }
+
+    return Array.from(row, (cell, colIndex) => {
+      if (cell === "#") {
+        return "water";
+      }
+      if (cell === "." || cell === "$" || cell === "%") {
+        return walkableTileKind;
+      }
+
+      throw new Error(
+        `${mapName} invalid character '${cell}' at row ${rowIndex + 1}, col ${colIndex + 1}. Allowed: '#', '.', '$', or '%'.`,
+      );
+    });
+  });
+}
+
+function getMarkerTileRect(
+  mapName: string,
+  map: string,
+  marker: "$" | "%",
+  fallbackRect: { x: number; y: number; width: number; height: number },
+): { x: number; y: number; width: number; height: number } {
+  const mapRows = parseCollisionMapRows(mapName, map);
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  let markerCount = 0;
+
+  for (let y = 0; y < mapRows.length; y += 1) {
+    const row = mapRows[y];
+    for (let x = 0; x < row.length; x += 1) {
+      if (row[x] !== marker) {
+        continue;
+      }
+
+      markerCount += 1;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (markerCount === 0) {
+    return fallbackRect;
+  }
+
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+  };
+}
+
+export function getIslandDockInteractionTileRect(): { x: number; y: number; width: number; height: number } {
+  return getMarkerTileRect("ISLAND_COLLISION_MAP", ISLAND_COLLISION_MAP, "$", { x: 28, y: 10, width: 2, height: 2 });
+}
+
+export function getIslandHouseDoorInteractionTileRect(): { x: number; y: number; width: number; height: number } {
+  return getMarkerTileRect("ISLAND_COLLISION_MAP", ISLAND_COLLISION_MAP, "%", { x: 16, y: 11, width: 2, height: 1 });
 }
 
 export function createIslandTerrain(cols: number, rows: number, islandBlobWidth: number, islandBlobHeight: number): TerrainGrid {
-  const terrain = createFilledTerrain(cols, rows, "water");
-  const centerX = (cols - 1) / 2;
-  const centerY = (rows - 1) / 2;
-  const radiusX = islandBlobWidth / 2;
-  const radiusY = islandBlobHeight / 2;
-
-  for (let y = 0; y < rows; y += 1) {
-    for (let x = 0; x < cols; x += 1) {
-      const normalizedX = (x - centerX) / radiusX;
-      const normalizedY = (y - centerY) / radiusY;
-      const angle = Math.atan2(normalizedY, normalizedX);
-      const distance = Math.hypot(normalizedX, normalizedY);
-
-      const blobEdge =
-        0.84 +
-        0.1 * Math.sin(angle * 3) +
-        0.06 * Math.cos(angle * 5) +
-        0.05 * Math.sin((x + y) * 0.45);
-
-      if (distance <= blobEdge) {
-        terrain[y][x] = "land";
-      }
-    }
-  }
-
-  return terrain;
+  void islandBlobWidth;
+  void islandBlobHeight;
+  return createTerrainFromCollisionMap("ISLAND_COLLISION_MAP", ISLAND_COLLISION_MAP, cols, rows);
 }
 
 export function createOceanTerrain(cols: number, rows: number, boatWidth: number, boatHeight: number): TerrainGrid {
-  const terrain = createFilledTerrain(cols, rows, "water");
-  const boatStartCol = Math.floor((cols - boatWidth) / 2);
-  const boatStartRow = Math.floor((rows - boatHeight) / 2);
-
-  for (let y = boatStartRow; y < boatStartRow + boatHeight; y += 1) {
-    for (let x = boatStartCol; x < boatStartCol + boatWidth; x += 1) {
-      terrain[y][x] = "boat";
-    }
-  }
-
-  return terrain;
+  void boatWidth;
+  void boatHeight;
+  return createTerrainFromCollisionMap("BOAT_COLLISION_MAP", BOAT_COLLISION_MAP, cols, rows, "boat");
 }
 
 export function createRestaurantTerrain(cols: number, rows: number): TerrainGrid {
-  const terrain = createFilledTerrain(cols, rows, "water");
-
-  markTiles(terrain, "plain", 5, 8, 24, 16);
-  markTiles(terrain, "plain", 24, 7, 39, 24);
-  markTiles(terrain, "plain", 20, 17, 26, 26);
-  markTiles(terrain, "plain", 7, 17, 14, 23);
-
-  markTiles(terrain, "water", 5, 3, 24, 7);
-  markTiles(terrain, "water", 4, 5, 8, 14);
-  markTiles(terrain, "water", 9, 13, 19, 15);
-  markTiles(terrain, "water", 22, 9, 24, 15);
-
-  markTiles(terrain, "water", 25, 8, 33, 11);
-  markTiles(terrain, "water", 29, 12, 31, 14);
-  markTiles(terrain, "water", 35, 12, 38, 15);
-  markTiles(terrain, "water", 28, 18, 36, 21);
-  markTiles(terrain, "water", 37, 20, 39, 24);
-  markTiles(terrain, "water", 21, 22, 26, 24);
-  markTiles(terrain, "water", 9, 19, 13, 22);
-
-  markTiles(terrain, "plain", 22, 25, 25, 26);
-
-  return terrain;
+  return createTerrainFromCollisionMap("SHOP_COLLISION_MAP", SHOP_COLLISION_MAP, cols, rows);
 }
 
 export function isRestaurantInteriorTile(tileX: number, tileY: number): boolean {
@@ -81,28 +217,6 @@ export function isRestaurantInteriorTile(tileX: number, tileY: number): boolean 
   const serviceNook = tileX >= 8 && tileX <= 14 && tileY >= 15 && tileY <= 21;
 
   return kitchenWing || diningRoom || frontEntry || bayWindow || serviceNook;
-}
-
-function markTiles(
-  terrain: TerrainGrid,
-  fill: TileKind,
-  startX: number,
-  startY: number,
-  endX: number,
-  endY: number,
-): void {
-  for (let y = startY; y <= endY; y += 1) {
-    const row = terrain[y];
-    if (!row) {
-      continue;
-    }
-
-    for (let x = startX; x <= endX; x += 1) {
-      if (x >= 0 && x < row.length) {
-        row[x] = fill;
-      }
-    }
-  }
 }
 
 export function getTileKind(
