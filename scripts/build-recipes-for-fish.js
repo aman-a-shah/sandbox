@@ -524,6 +524,29 @@ const uniqueByTitle = (recipes) => {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const loadExistingMasterRecipes = async () => {
+  try {
+    const contents = await fs.readFile(OUTPUT_PATH, "utf8");
+    return JSON.parse(contents);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return null;
+    }
+    throw error;
+  }
+};
+
+const findExistingFishEntry = (masterOutput, fish) => {
+  const entries = Array.isArray(masterOutput?.fishRecipes) ? masterOutput.fishRecipes : [];
+  return (
+    entries.find(
+      (entry) =>
+        entry.fish?.commonName === fish.commonName &&
+        entry.fish?.scientificName === fish.scientificName,
+    ) || null
+  );
+};
+
 const buildFishEntry = (fish, recipes, quotaStrategy) => ({
   fish: {
     commonName: fish.commonName,
@@ -613,6 +636,15 @@ const main = async () => {
 
   const fish = await loadFishRecord(fishJsonPath, fishQuery);
   const aliases = buildAliases(fish);
+  const existingMasterOutput = await loadExistingMasterRecipes();
+  const existingFishEntry = findExistingFishEntry(existingMasterOutput, fish);
+
+  if (existingFishEntry && Array.isArray(existingFishEntry.recipes) && existingFishEntry.recipes.length > 0) {
+    console.log(
+      `Recipes already exist for ${fish.commonName} in ${OUTPUT_PATH}; skipping Spoonacular lookup.`,
+    );
+    return;
+  }
 
   const searchResponse = await searchRecipes({
     query: fish.commonName,
@@ -652,13 +684,12 @@ const main = async () => {
 
     let finalOutput = output;
     try {
-      const existingContents = await fs.readFile(OUTPUT_PATH, "utf8");
-      const existingOutput = JSON.parse(existingContents);
+      const existingOutput = existingMasterOutput;
+      if (existingOutput) {
       finalOutput = mergeRecipeOutputs(existingOutput, output);
-    } catch (error) {
-      if (error.code !== "ENOENT") {
-        throw error;
       }
+    } catch (error) {
+      throw error;
     }
 
     await fs.writeFile(OUTPUT_PATH, JSON.stringify(finalOutput, null, 2), "utf8");
@@ -701,13 +732,12 @@ const main = async () => {
 
   let finalOutput = output;
   try {
-    const existingContents = await fs.readFile(OUTPUT_PATH, "utf8");
-    const existingOutput = JSON.parse(existingContents);
+    const existingOutput = existingMasterOutput;
+    if (existingOutput) {
     finalOutput = mergeRecipeOutputs(existingOutput, output);
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      throw error;
     }
+  } catch (error) {
+    throw error;
   }
 
   await fs.writeFile(OUTPUT_PATH, JSON.stringify(finalOutput, null, 2), "utf8");
