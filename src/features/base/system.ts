@@ -279,6 +279,9 @@ export function renderStatus(
   if (snapshot.fishingPhase !== null && snapshot.fishingTension !== null) {
     rows.push(["Fishing", snapshot.fishingPhase]);
     rows.push(["Tension", snapshot.fishingTension.toFixed(2)]);
+    if (snapshot.fishingHabitat) {
+      rows.push(["Habitat", snapshot.fishingHabitat]);
+    }
   }
   rows.push(["Bag", `${snapshot.inventoryUsedSlots}/${snapshot.inventoryTotalSlots}`]);
 

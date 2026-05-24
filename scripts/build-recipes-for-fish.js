@@ -1,14 +1,9 @@
-const fs = require("fs/promises");
-const path = require("path");
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const {
-  loadDotEnv,
-  slugify,
-} = require("./habitat-data-utils");
-const {
-  searchRecipes,
-  getBulkRecipeInformation,
-} = require("../src/api");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const OUTPUT_DIR = path.resolve(__dirname, "..", "generated", "recipes-by-fish");
 const OUTPUT_PATH = path.join(OUTPUT_DIR, "recipes.json");
@@ -23,16 +18,7 @@ const FALLBACK_RECIPE_TEMPLATES = {
       diets: ["pescatarian"],
       readyInMinutes: 25,
       servings: 2,
-      ingredients: [
-        "2 {fish} fillets",
-        "1 tbsp olive oil",
-        "2 tbsp butter",
-        "1 lemon",
-        "1 clove garlic",
-        "salt",
-        "black pepper",
-        "parsley",
-      ],
+      ingredients: ["2 {fish} fillets", "1 tbsp olive oil", "2 tbsp butter", "1 lemon", "1 clove garlic", "salt", "black pepper", "parsley"],
       instructions:
         "Pat the {fish} dry, season with salt and pepper, and sear in olive oil until cooked through. Add butter, garlic, and lemon juice, then spoon the sauce over the fish and finish with parsley.",
       nutrition: { calories: 420, protein: 34, fat: 26, carbohydrates: 6, sodium: 420 },
@@ -45,15 +31,7 @@ const FALLBACK_RECIPE_TEMPLATES = {
       diets: ["pescatarian"],
       readyInMinutes: 35,
       servings: 2,
-      ingredients: [
-        "2 {fish} fillets",
-        "2 cups cooked sushi rice",
-        "1 tbsp rice vinegar",
-        "1 cucumber",
-        "1 sheet nori",
-        "soy sauce",
-        "pickled ginger",
-      ],
+      ingredients: ["2 {fish} fillets", "2 cups cooked sushi rice", "1 tbsp rice vinegar", "1 cucumber", "1 sheet nori", "soy sauce", "pickled ginger"],
       instructions:
         "Cook and season the rice, slice the {fish} thinly, and build bowls with rice, cucumber, nori, and ginger. Serve with soy sauce.",
       nutrition: { calories: 510, protein: 29, fat: 12, carbohydrates: 67, sodium: 640 },
@@ -68,16 +46,7 @@ const FALLBACK_RECIPE_TEMPLATES = {
       diets: ["pescatarian"],
       readyInMinutes: 30,
       servings: 2,
-      ingredients: [
-        "2 {fish} fillets",
-        "1/2 cup breadcrumbs",
-        "1 tbsp Dijon mustard",
-        "1 tbsp olive oil",
-        "1 tbsp parsley",
-        "1 tsp thyme",
-        "salt",
-        "black pepper",
-      ],
+      ingredients: ["2 {fish} fillets", "1/2 cup breadcrumbs", "1 tbsp Dijon mustard", "1 tbsp olive oil", "1 tbsp parsley", "1 tsp thyme", "salt", "black pepper"],
       instructions:
         "Brush the {fish} with mustard, coat with herbed breadcrumbs, and bake until flaky and golden.",
       nutrition: { calories: 470, protein: 36, fat: 18, carbohydrates: 34, sodium: 510 },
@@ -90,17 +59,7 @@ const FALLBACK_RECIPE_TEMPLATES = {
       diets: ["pescatarian"],
       readyInMinutes: 45,
       servings: 4,
-      ingredients: [
-        "2 {fish} fillets",
-        "2 potatoes",
-        "1 onion",
-        "2 cups milk",
-        "1 cup stock",
-        "1 tbsp butter",
-        "1 celery stalk",
-        "salt",
-        "black pepper",
-      ],
+      ingredients: ["2 {fish} fillets", "2 potatoes", "1 onion", "2 cups milk", "1 cup stock", "1 tbsp butter", "1 celery stalk", "salt", "black pepper"],
       instructions:
         "Saute the onion and celery in butter, add potato and stock, then simmer. Stir in milk and chunks of {fish} and cook gently until tender.",
       nutrition: { calories: 390, protein: 24, fat: 14, carbohydrates: 39, sodium: 560 },
@@ -115,15 +74,7 @@ const FALLBACK_RECIPE_TEMPLATES = {
       diets: ["pescatarian"],
       readyInMinutes: 28,
       servings: 2,
-      ingredients: [
-        "2 {fish} steaks",
-        "1 orange",
-        "1 lemon",
-        "1 tbsp olive oil",
-        "1 tsp smoked paprika",
-        "salt",
-        "black pepper",
-      ],
+      ingredients: ["2 {fish} steaks", "1 orange", "1 lemon", "1 tbsp olive oil", "1 tsp smoked paprika", "salt", "black pepper"],
       instructions:
         "Rub the {fish} with oil and paprika, grill until browned, and serve with charred citrus wedges.",
       nutrition: { calories: 460, protein: 33, fat: 28, carbohydrates: 11, sodium: 390 },
@@ -136,15 +87,7 @@ const FALLBACK_RECIPE_TEMPLATES = {
       diets: ["pescatarian"],
       readyInMinutes: 30,
       servings: 2,
-      ingredients: [
-        "2 {fish} fillets",
-        "2 cups cooked rice",
-        "2 scallions",
-        "1 tsp ginger",
-        "1 tbsp soy sauce",
-        "1 tsp sesame oil",
-        "1 cucumber",
-      ],
+      ingredients: ["2 {fish} fillets", "2 cups cooked rice", "2 scallions", "1 tsp ginger", "1 tbsp soy sauce", "1 tsp sesame oil", "1 cucumber"],
       instructions:
         "Cook the {fish}, whisk a ginger scallion sauce, and serve over rice with sliced cucumber.",
       nutrition: { calories: 540, protein: 31, fat: 17, carbohydrates: 61, sodium: 670 },
@@ -159,16 +102,7 @@ const FALLBACK_RECIPE_TEMPLATES = {
       diets: ["pescatarian"],
       readyInMinutes: 35,
       servings: 4,
-      ingredients: [
-        "3 portions {fish}",
-        "1 egg",
-        "1/2 cup breadcrumbs",
-        "2 tbsp mayonnaise",
-        "1 tsp mustard",
-        "1 tbsp parsley",
-        "salt",
-        "black pepper",
-      ],
+      ingredients: ["3 portions {fish}", "1 egg", "1/2 cup breadcrumbs", "2 tbsp mayonnaise", "1 tsp mustard", "1 tbsp parsley", "salt", "black pepper"],
       instructions:
         "Mix flaked cooked {fish} with the binder ingredients, shape into cakes, and pan-fry until crisp on both sides.",
       nutrition: { calories: 320, protein: 18, fat: 16, carbohydrates: 24, sodium: 520 },
@@ -183,15 +117,7 @@ const FALLBACK_RECIPE_TEMPLATES = {
       diets: ["pescatarian"],
       readyInMinutes: 32,
       servings: 2,
-      ingredients: [
-        "2 {fish} fillets",
-        "1 tbsp olive oil",
-        "2 cloves garlic",
-        "1 tbsp mixed herbs",
-        "salt",
-        "black pepper",
-        "1 lemon",
-      ],
+      ingredients: ["2 {fish} fillets", "1 tbsp olive oil", "2 cloves garlic", "1 tbsp mixed herbs", "salt", "black pepper", "1 lemon"],
       instructions:
         "Season the {fish}, roast until cooked through, and finish with garlic, herbs, and lemon.",
       nutrition: { calories: 430, protein: 32, fat: 24, carbohydrates: 8, sodium: 410 },
@@ -236,6 +162,153 @@ const MASS_UNIT_TO_GRAMS = {
   pounds: 453.592,
 };
 
+const loadDotEnv = async () => {
+  const envPath = path.resolve(__dirname, "..", ".env");
+
+  try {
+    const contents = await fs.readFile(envPath, "utf8");
+    contents.split(/\r?\n/).forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) {
+        return;
+      }
+
+      const separatorIndex = trimmed.indexOf("=");
+      if (separatorIndex === -1) {
+        return;
+      }
+
+      const key = trimmed.slice(0, separatorIndex).trim();
+      const value = trimmed.slice(separatorIndex + 1).trim();
+      if (!(key in process.env)) {
+        process.env[key] = value;
+      }
+    });
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+};
+
+const slugify = (value) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const buildQueryString = (params = {}) => {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item !== undefined && item !== null && item !== "") {
+          searchParams.append(key, String(item));
+        }
+      });
+      return;
+    }
+
+    searchParams.append(key, String(value));
+  });
+
+  const query = searchParams.toString();
+  return query ? `?${query}` : "";
+};
+
+const resolveSpoonacularConfig = () => {
+  const rapidApiHost = process.env["RECIPE-API-HOST"] || "";
+  const explicitBaseUrl = process.env["SPOONACULAR_BASE_URL"] || "";
+  const apiKey = process.env["SPOONACULAR_API_KEY"] || process.env["RECIPE-API-KEY"] || "";
+  const baseUrl = explicitBaseUrl.trim() || (rapidApiHost ? `https://${rapidApiHost}` : "https://api.spoonacular.com");
+
+  if (!apiKey) {
+    throw new Error("Spoonacular API key is not configured.");
+  }
+
+  return { apiKey, rapidApiHost, baseUrl };
+};
+
+const createSpoonacularHeaders = () => {
+  const config = resolveSpoonacularConfig();
+  if (config.rapidApiHost) {
+    return {
+      Accept: "application/json",
+      "X-RapidAPI-Key": config.apiKey,
+      "X-RapidAPI-Host": config.rapidApiHost,
+    };
+  }
+
+  return {
+    Accept: "application/json",
+    "x-api-key": config.apiKey,
+  };
+};
+
+const requestJson = async (url, options = {}) => {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Request failed (${response.status} ${response.statusText}) for ${url}: ${body}`);
+  }
+
+  return response.json();
+};
+
+const searchRecipes = async ({
+  query,
+  includeIngredients,
+  excludeIngredients,
+  cuisine,
+  diet,
+  type,
+  sort,
+  instructionsRequired,
+  number = 10,
+  addRecipeInformation = true,
+  addRecipeNutrition = true,
+} = {}) => {
+  const { baseUrl } = resolveSpoonacularConfig();
+  const url = `${baseUrl}/recipes/complexSearch${buildQueryString({
+    query,
+    includeIngredients: includeIngredients?.join(","),
+    excludeIngredients: excludeIngredients?.join(","),
+    cuisine,
+    diet,
+    type,
+    sort,
+    instructionsRequired,
+    number,
+    addRecipeInformation,
+    addRecipeNutrition,
+  })}`;
+
+  return requestJson(url, {
+    headers: createSpoonacularHeaders(),
+  });
+};
+
+const getBulkRecipeInformation = async (recipeIds, { includeNutrition = true } = {}) => {
+  if (!Array.isArray(recipeIds) || recipeIds.length === 0) {
+    throw new Error("getBulkRecipeInformation requires a non-empty recipeIds array.");
+  }
+
+  const { baseUrl } = resolveSpoonacularConfig();
+  const url = `${baseUrl}/recipes/informationBulk${buildQueryString({
+    ids: recipeIds.join(","),
+    includeNutrition,
+  })}`;
+
+  return requestJson(url, {
+    headers: createSpoonacularHeaders(),
+  });
+};
+
 const loadFishRecord = async (jsonPath, fishQuery) => {
   const contents = await fs.readFile(jsonPath, "utf8");
   const data = JSON.parse(contents);
@@ -245,12 +318,7 @@ const loadFishRecord = async (jsonPath, fishQuery) => {
   }
 
   const normalizedQuery = (fishQuery || "").trim().toLowerCase();
-  const fish = data.fish.find((entry) => {
-    return (
-      entry.commonName?.toLowerCase() === normalizedQuery ||
-      entry.scientificName?.toLowerCase() === normalizedQuery
-    );
-  });
+  const fish = data.fish.find((entry) => entry.commonName?.toLowerCase() === normalizedQuery || entry.scientificName?.toLowerCase() === normalizedQuery);
 
   if (!fish) {
     throw new Error(`No fish found in ${jsonPath} for query "${fishQuery}".`);
@@ -306,8 +374,7 @@ const inferWholeFishCount = (ingredient, fish) => {
 
 const normalizeNutrition = (nutrition) => {
   const nutrients = Array.isArray(nutrition?.nutrients) ? nutrition.nutrients : [];
-  const pick = (name) =>
-    nutrients.find((entry) => entry.name?.toLowerCase() === name.toLowerCase()) || null;
+  const pick = (name) => nutrients.find((entry) => entry.name?.toLowerCase() === name.toLowerCase()) || null;
 
   return {
     calories: pick("Calories")?.amount || null,
@@ -342,46 +409,22 @@ const pickFallbackCategory = (fish) => {
   const name = (fish.commonName || "").toLowerCase();
   const family = (fish.family || "").toLowerCase();
 
-  if (
-    name.includes("sole") ||
-    name.includes("plaice") ||
-    name.includes("flounder") ||
-    family.includes("pleuronect")
-  ) {
+  if (name.includes("sole") || name.includes("plaice") || name.includes("flounder") || family.includes("pleuronect")) {
     return "delicate";
   }
 
-  if (
-    name.includes("salmon") ||
-    name.includes("mackerel") ||
-    name.includes("herring") ||
-    name.includes("sard") ||
-    name.includes("tuna")
-  ) {
+  if (name.includes("salmon") || name.includes("mackerel") || name.includes("herring") || name.includes("sard") || name.includes("tuna")) {
     return "oily";
   }
 
-  if (
-    name.includes("cod") ||
-    name.includes("poll") ||
-    name.includes("whiting") ||
-    name.includes("hake") ||
-    family.includes("gadidae")
-  ) {
+  if (name.includes("cod") || name.includes("poll") || name.includes("whiting") || name.includes("hake") || family.includes("gadidae")) {
     return "white";
-  }
-
-  if (name.includes("seahorse") || name.includes("goby")) {
-    return "generic";
   }
 
   return "generic";
 };
 
-const seededIndex = (seed, length) => {
-  const total = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return total % length;
-};
+const seededIndex = (seed, length) => [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0) % length;
 
 const makeFallbackRecipe = (fish) => {
   const category = pickFallbackCategory(fish);
@@ -393,14 +436,7 @@ const makeFallbackRecipe = (fish) => {
   const total = Number((template.basePrice * (1 + scarcity)).toFixed(2));
 
   return {
-    requiredFishIngredients: [
-      {
-        name: fishLabel,
-        amount: quantityWholeFish,
-        unit: "fish",
-        original: `${quantityWholeFish} ${fishLabel}`,
-      },
-    ],
+    requiredFishIngredients: [{ name: fishLabel, amount: quantityWholeFish, unit: "fish", original: `${quantityWholeFish} ${fishLabel}` }],
     recipeId: `fallback-${slugify(fishLabel)}`,
     title: template.title.replaceAll("{fish}", fishLabel),
     sourceUrl: null,
@@ -417,16 +453,8 @@ const makeFallbackRecipe = (fish) => {
       rawUnit: "fish",
     },
     rarity: computeRecipeRarity(fish, quantityWholeFish),
-    estimatedPrice: {
-      currency: "USD",
-      total,
-      basePriceFromApi: template.basePrice,
-    },
-    nutrition: {
-      ...template.nutrition,
-      servingSize: null,
-      servingUnit: null,
-    },
+    estimatedPrice: { currency: "USD", total, basePriceFromApi: template.basePrice },
+    nutrition: { ...template.nutrition, servingSize: null, servingUnit: null },
     recipe: {
       summary: `Fallback generated recipe for ${fishLabel} because Spoonacular did not return a matching result.`,
       dishTypes: template.dishTypes,
@@ -449,9 +477,7 @@ const makeFallbackRecipe = (fish) => {
 
 const simplifyRecipe = (fish, recipe, targetIngredient, quantityWholeFish) => ({
   requiredFishIngredients: (recipe.extendedIngredients || [])
-    .filter((ingredient) =>
-      matchesTargetFish(ingredient, buildAliases(fish)),
-    )
+    .filter((ingredient) => matchesTargetFish(ingredient, buildAliases(fish)))
     .map((ingredient) => ({
       name: ingredient.name,
       amount: ingredient.amount,
@@ -499,15 +525,11 @@ const simplifyRecipe = (fish, recipe, targetIngredient, quantityWholeFish) => ({
 const isValidRecipeForFish = (recipe, aliases) => {
   const ingredients = Array.isArray(recipe.extendedIngredients) ? recipe.extendedIngredients : [];
   const targetMatches = ingredients.filter((ingredient) => matchesTargetFish(ingredient, aliases));
-
   if (targetMatches.length < 1) {
     return { valid: false };
   }
 
-  return {
-    valid: true,
-    targetIngredient: targetMatches[0],
-  };
+  return { valid: true, targetIngredient: targetMatches[0] };
 };
 
 const uniqueByTitle = (recipes) => {
@@ -538,13 +560,7 @@ const loadExistingMasterRecipes = async () => {
 
 const findExistingFishEntry = (masterOutput, fish) => {
   const entries = Array.isArray(masterOutput?.fishRecipes) ? masterOutput.fishRecipes : [];
-  return (
-    entries.find(
-      (entry) =>
-        entry.fish?.commonName === fish.commonName &&
-        entry.fish?.scientificName === fish.scientificName,
-    ) || null
-  );
+  return entries.find((entry) => entry.fish?.commonName === fish.commonName && entry.fish?.scientificName === fish.scientificName) || null;
 };
 
 const buildFishEntry = (fish, recipes, quotaStrategy) => ({
@@ -559,36 +575,22 @@ const buildFishEntry = (fish, recipes, quotaStrategy) => ({
   },
   notes: {
     quotaStrategy,
-    filtering:
-      "Recipes are kept when the target fish appears in the ingredient list, even if other seafood or fish ingredients are also present.",
-    pricing:
-      "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
-    quantityInference:
-      "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
-    fallback:
-      "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead.",
+    filtering: "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
+    pricing: "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
+    quantityInference: "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
+    fallback: "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead.",
   },
   recipeCount: recipes.length,
   recipes,
 });
 
 const mergeRecipeOutputs = (existingOutput, nextOutput) => {
-  const existingEntries = Array.isArray(existingOutput?.fishRecipes)
-    ? existingOutput.fishRecipes
-    : [];
-  const nextEntries = Array.isArray(nextOutput?.fishRecipes)
-    ? nextOutput.fishRecipes
-    : [];
-
+  const existingEntries = Array.isArray(existingOutput?.fishRecipes) ? existingOutput.fishRecipes : [];
+  const nextEntries = Array.isArray(nextOutput?.fishRecipes) ? nextOutput.fishRecipes : [];
   const mergedEntries = [...existingEntries];
 
   nextEntries.forEach((nextEntry) => {
-    const existingEntry = mergedEntries.find(
-      (entry) =>
-        entry.fish?.commonName === nextEntry.fish?.commonName &&
-        entry.fish?.scientificName === nextEntry.fish?.scientificName,
-    );
-
+    const existingEntry = mergedEntries.find((entry) => entry.fish?.commonName === nextEntry.fish?.commonName && entry.fish?.scientificName === nextEntry.fish?.scientificName);
     if (!existingEntry) {
       mergedEntries.push(nextEntry);
       return;
@@ -602,7 +604,6 @@ const mergeRecipeOutputs = (existingOutput, nextOutput) => {
       if (recipe.recipeId && seenRecipeIds.has(recipe.recipeId)) {
         return;
       }
-
       existingRecipes.push(recipe);
       if (recipe.recipeId) {
         seenRecipeIds.add(recipe.recipeId);
@@ -622,6 +623,19 @@ const mergeRecipeOutputs = (existingOutput, nextOutput) => {
   };
 };
 
+const writeOutput = async (fish, recipes, quotaStrategy, existingMasterOutput, successLabel) => {
+  const output = {
+    generatedAt: new Date().toISOString(),
+    fishRecipeCount: 1,
+    fishRecipes: [buildFishEntry(fish, recipes, quotaStrategy)],
+  };
+
+  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+  const finalOutput = existingMasterOutput ? mergeRecipeOutputs(existingMasterOutput, output) : output;
+  await fs.writeFile(OUTPUT_PATH, JSON.stringify(finalOutput, null, 2), "utf8");
+  console.log(`${successLabel} ${OUTPUT_PATH}`);
+};
+
 const main = async () => {
   await loadDotEnv();
 
@@ -629,9 +643,7 @@ const main = async () => {
   const fishQuery = fishQueryParts.join(" ").trim();
 
   if (!fishJsonPath || !fishQuery) {
-    throw new Error(
-      'Usage: node scripts/build-recipes-for-fish.js "<fish-by-habitat-json>" "<fish common or scientific name>"',
-    );
+    throw new Error('Usage: node scripts/build-recipes-for-fish.js "<fish-by-habitat-json>" "<fish common or scientific name>"');
   }
 
   const fish = await loadFishRecord(fishJsonPath, fishQuery);
@@ -640,9 +652,7 @@ const main = async () => {
   const existingFishEntry = findExistingFishEntry(existingMasterOutput, fish);
 
   if (existingFishEntry && Array.isArray(existingFishEntry.recipes) && existingFishEntry.recipes.length > 0) {
-    console.log(
-      `Recipes already exist for ${fish.commonName} in ${OUTPUT_PATH}; skipping Spoonacular lookup.`,
-    );
+    console.log(`Recipes already exist for ${fish.commonName} in ${OUTPUT_PATH}; skipping Spoonacular lookup.`);
     return;
   }
 
@@ -656,53 +666,23 @@ const main = async () => {
     addRecipeNutrition: false,
   });
 
-  const candidateResults = Array.isArray(searchResponse?.results)
-    ? searchResponse.results
-    : Array.isArray(searchResponse)
-      ? searchResponse
-      : [];
-
-  const recipeIds = uniqueByTitle(candidateResults)
-    .slice(0, 6)
-    .map((recipe) => recipe.id)
-    .filter(Boolean);
+  const candidateResults = Array.isArray(searchResponse?.results) ? searchResponse.results : Array.isArray(searchResponse) ? searchResponse : [];
+  const recipeIds = uniqueByTitle(candidateResults).slice(0, 6).map((recipe) => recipe.id).filter(Boolean);
 
   if (recipeIds.length === 0) {
-    const output = {
-      generatedAt: new Date().toISOString(),
-      fishRecipeCount: 1,
-      fishRecipes: [
-        buildFishEntry(
-          fish,
-          [makeFallbackRecipe(fish)],
-          "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
-        ),
-      ],
-    };
-
-    await fs.mkdir(OUTPUT_DIR, { recursive: true });
-
-    let finalOutput = output;
-    try {
-      const existingOutput = existingMasterOutput;
-      if (existingOutput) {
-      finalOutput = mergeRecipeOutputs(existingOutput, output);
-      }
-    } catch (error) {
-      throw error;
-    }
-
-    await fs.writeFile(OUTPUT_PATH, JSON.stringify(finalOutput, null, 2), "utf8");
-    console.log(`Wrote fallback fish recipe JSON to ${OUTPUT_PATH}`);
+    await writeOutput(
+      fish,
+      [makeFallbackRecipe(fish)],
+      "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
+      existingMasterOutput,
+      "Wrote fallback fish recipe JSON to",
+    );
     return;
   }
 
   await sleep(BULK_REQUEST_DELAY_MS);
 
-  const detailedRecipes = await getBulkRecipeInformation(recipeIds, {
-    includeNutrition: true,
-  });
-
+  const detailedRecipes = await getBulkRecipeInformation(recipeIds, { includeNutrition: true });
   const filteredRecipes = [];
   for (const recipe of detailedRecipes) {
     const validation = isValidRecipeForFish(recipe, aliases);
@@ -715,33 +695,15 @@ const main = async () => {
   }
 
   const finalRecipes = uniqueByTitle(filteredRecipes).slice(0, 1);
+  const recipesToWrite = finalRecipes.length > 0 ? finalRecipes : [makeFallbackRecipe(fish)];
 
-  const output = {
-    generatedAt: new Date().toISOString(),
-    fishRecipeCount: 1,
-    fishRecipes: [
-      buildFishEntry(
-        fish,
-        finalRecipes,
-        "This script is designed to use two Spoonacular requests per run with a short pause between them to stay under the RapidAPI per-second rate limit, and it returns only one best recipe to stay conservative with quota.",
-      ),
-    ],
-  };
-
-  await fs.mkdir(OUTPUT_DIR, { recursive: true });
-
-  let finalOutput = output;
-  try {
-    const existingOutput = existingMasterOutput;
-    if (existingOutput) {
-    finalOutput = mergeRecipeOutputs(existingOutput, output);
-    }
-  } catch (error) {
-    throw error;
-  }
-
-  await fs.writeFile(OUTPUT_PATH, JSON.stringify(finalOutput, null, 2), "utf8");
-  console.log(`Wrote fish recipe JSON to ${OUTPUT_PATH}`);
+  await writeOutput(
+    fish,
+    recipesToWrite,
+    "This script is designed to use two Spoonacular requests per run with a short pause between them to stay under the RapidAPI per-second rate limit, and it returns only one best recipe to stay conservative with quota.",
+    existingMasterOutput,
+    finalRecipes.length > 0 ? "Wrote fish recipe JSON to" : "Wrote fallback fish recipe JSON to",
+  );
 };
 
 main().catch((error) => {

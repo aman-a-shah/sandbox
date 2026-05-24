@@ -13,6 +13,7 @@ export function createRecipeBookState(): RecipeBookState {
     isOpen: false,
     currentPage: 0,
     selectedRecipeId: null,
+    availableRecipes: [],
   };
 }
 

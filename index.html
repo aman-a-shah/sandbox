@@ -20,16 +20,43 @@
       >
         <span class="inventory-toggle-icon" aria-hidden="true"></span>
       </button>
-      <p class="controls-overlay">Tide & Table • Island Kitchen • Calm Seas</p>
-      <p id="workstation-prompt" class="workstation-prompt is-hidden">Open recipe book</p>
+      <p class="controls-overlay">
+        WASD / Arrow keys move • Island dock: click to open ocean chart • Click chart to pick a habitat route • Shop
+        workstation: press E • Ocean fishing: click water to cast, click bobber on bite, hold mouse to reel
+      </p>
+      <p id="workstation-prompt" class="workstation-prompt is-hidden">Press E to open workstation</p>
 
       <section id="inventory-overlay" class="inventory-overlay is-hidden" aria-hidden="true">
         <div class="inventory-panel" role="dialog" aria-modal="true" aria-label="Backpack inventory">
           <header class="inventory-header">
             <h2>Backpack Inventory</h2>
-            <button id="inventory-close" class="inventory-close" type="button" aria-label="Close backpack inventory">
-              &times;
-            </button>
+            <div class="inventory-header-actions">
+              <div class="inventory-tabs" role="tablist" aria-label="Inventory views">
+                <button
+                  id="inventory-tab-bag"
+                  class="inventory-tab is-active"
+                  type="button"
+                  role="tab"
+                  aria-selected="true"
+                  aria-controls="inventory-grid-panel"
+                >
+                  Bag
+                </button>
+                <button
+                  id="inventory-tab-discovered"
+                  class="inventory-tab"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="inventory-grid-panel"
+                >
+                  Discovered Fish
+                </button>
+              </div>
+              <button id="inventory-close" class="inventory-close" type="button" aria-label="Close backpack inventory">
+                Close
+              </button>
+            </div>
           </header>
 
           <div class="inventory-content">
@@ -51,7 +78,7 @@
           <header class="recipe-book-header">
             <h2>Grandma Edith's Recipe Book</h2>
             <button id="recipe-book-close" class="recipe-book-close" type="button" aria-label="Close recipe book">
-              &times;
+              ×
             </button>
           </header>
 

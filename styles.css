@@ -194,6 +194,33 @@ body {
   gap: 12px;
 }
 
+.inventory-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inventory-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.inventory-tab {
+  border: 1px solid rgba(183, 208, 238, 0.4);
+  border-radius: 999px;
+  padding: 7px 11px;
+  color: #dbe8f9;
+  background: rgba(24, 47, 74, 0.65);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.inventory-tab.is-active {
+  border-color: rgba(241, 227, 152, 0.95);
+  color: #fff2bf;
+  background: rgba(74, 57, 26, 0.82);
+}
+
 .inventory-header h2 {
   margin: 0;
   font-size: 1.25rem;
@@ -240,6 +267,20 @@ body {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
+}
+
+.inventory-grid--discovered {
+  align-content: start;
+}
+
+.inventory-discovered-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed rgba(130, 170, 208, 0.45);
+  border-radius: 10px;
+  color: #a9c3df;
+  background: rgba(26, 47, 72, 0.42);
 }
 
 .inventory-slot {
@@ -532,6 +573,11 @@ body {
   border-color: #8b4f24;
   background: var(--paper-selected);
   box-shadow: 0 0 0 2px rgba(163, 89, 39, 0.25);
+}
+
+.recipe-card.is-locked {
+  opacity: 0.65;
+  background: rgba(223, 213, 194, 0.88);
 }
 
 .recipe-card-title {
