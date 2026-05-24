@@ -5,6 +5,10 @@ import { MOCK_RECIPES } from "./config";
 import { RECIPES_PER_COLUMN, RECIPE_COLUMNS_PER_SPREAD, RECIPES_PER_SPREAD, WORKSTATION_INTERACT_TILE_DISTANCE } from "./constants";
 import type { RecipeBookState, RecipeStub, ShopDomRefs, Workstation } from "./types";
 
+const cookingTableUrl = "/sprites-clean/cooking_table_transparent.png";
+const cookingTableImage = new Image();
+cookingTableImage.src = cookingTableUrl;
+
 export function drawWorkstation(
   renderCtx: CanvasRenderingContext2D,
   currentSceneId: BaseState["currentSceneId"],
@@ -17,10 +21,20 @@ export function drawWorkstation(
 
   const screenX = workstation.tileX * BASE_CONSTANTS.TILE_SIZE - camera.x;
   const screenY = workstation.tileY * BASE_CONSTANTS.TILE_SIZE - camera.y;
-  renderCtx.fillStyle = "#f0ece3";
-  renderCtx.fillRect(screenX, screenY, BASE_CONSTANTS.TILE_SIZE, BASE_CONSTANTS.TILE_SIZE);
+  const drawWidth = BASE_CONSTANTS.TILE_SIZE * 5;
+  const drawHeight = BASE_CONSTANTS.TILE_SIZE * 4;
+  const drawX = screenX - BASE_CONSTANTS.TILE_SIZE * 2;
+  const drawY = screenY - BASE_CONSTANTS.TILE_SIZE * 3;
+
+  if (cookingTableImage.complete) {
+    renderCtx.drawImage(cookingTableImage, 360, 365, 540, 445, drawX, drawY, drawWidth, drawHeight);
+    return;
+  }
+
+  renderCtx.fillStyle = "#9a642f";
+  renderCtx.fillRect(drawX, drawY + BASE_CONSTANTS.TILE_SIZE, drawWidth, BASE_CONSTANTS.TILE_SIZE * 2);
   renderCtx.strokeStyle = "rgba(60, 46, 33, 0.7)";
-  renderCtx.strokeRect(screenX, screenY, BASE_CONSTANTS.TILE_SIZE, BASE_CONSTANTS.TILE_SIZE);
+  renderCtx.strokeRect(drawX, drawY + BASE_CONSTANTS.TILE_SIZE, drawWidth, BASE_CONSTANTS.TILE_SIZE * 2);
 }
 
 export function isPlayerNearWorkstation(baseState: BaseState, workstation: Workstation): boolean {

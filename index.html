@@ -18,20 +18,17 @@
         aria-expanded="false"
         aria-label="Open backpack inventory"
       >
-        <span class="inventory-toggle-icon" aria-hidden="true">&#127890;</span>
+        <span class="inventory-toggle-icon" aria-hidden="true"></span>
       </button>
-      <p class="controls-overlay">
-        WASD / Arrow keys move • Click minimap nodes to switch scene • Shop workstation: press E • Ocean fishing:
-        click water to cast, click bobber on bite, hold mouse to reel
-      </p>
-      <p id="workstation-prompt" class="workstation-prompt is-hidden">Press E to open workstation</p>
+      <p class="controls-overlay">Tide & Table • Island Kitchen • Calm Seas</p>
+      <p id="workstation-prompt" class="workstation-prompt is-hidden">Open recipe book</p>
 
       <section id="inventory-overlay" class="inventory-overlay is-hidden" aria-hidden="true">
         <div class="inventory-panel" role="dialog" aria-modal="true" aria-label="Backpack inventory">
           <header class="inventory-header">
             <h2>Backpack Inventory</h2>
             <button id="inventory-close" class="inventory-close" type="button" aria-label="Close backpack inventory">
-              Close
+              &times;
             </button>
           </header>
 
@@ -54,7 +51,7 @@
           <header class="recipe-book-header">
             <h2>Grandma Edith's Recipe Book</h2>
             <button id="recipe-book-close" class="recipe-book-close" type="button" aria-label="Close recipe book">
-              Close
+              &times;
             </button>
           </header>
 

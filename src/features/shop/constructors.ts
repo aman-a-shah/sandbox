@@ -3,8 +3,8 @@ import type { RecipeBookState, ShopState, Workstation } from "./types";
 export function createWorkstation(): Workstation {
   return {
     sceneId: "shop",
-    tileX: 15,
-    tileY: 10,
+    tileX: 13,
+    tileY: 9,
   };
 }
 

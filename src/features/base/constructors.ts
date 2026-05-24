@@ -1,6 +1,6 @@
 import { GAME_CONFIG } from "../../core/config/gameConfig";
 import { BASE_CONSTANTS } from "./constants";
-import { createIslandTerrain, createOceanTerrain } from "./terrain";
+import { createIslandTerrain, createOceanTerrain, createRestaurantTerrain } from "./terrain";
 import type { BaseState, Camera, Player, SceneConfig, SceneId, TerrainGrid } from "./types";
 
 export function createCamera(): Camera {
@@ -47,7 +47,7 @@ export function createScenes(): Record<SceneId, SceneConfig> {
       background: "#7d5231",
       worldCols: BASE_CONSTANTS.SCENE_WORLD_COLS,
       worldRows: BASE_CONSTANTS.SCENE_WORLD_ROWS,
-      spawn: { x: 12, y: 10 },
+      spawn: { x: 15, y: 11 },
     },
   };
 }
@@ -66,6 +66,7 @@ export function createSceneTerrains(): Partial<Record<SceneId, TerrainGrid>> {
       BASE_CONSTANTS.BOAT_WIDTH,
       BASE_CONSTANTS.BOAT_HEIGHT,
     ),
+    shop: createRestaurantTerrain(BASE_CONSTANTS.SCENE_WORLD_COLS, BASE_CONSTANTS.SCENE_WORLD_ROWS),
   };
 }
 

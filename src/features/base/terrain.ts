@@ -47,6 +47,64 @@ export function createOceanTerrain(cols: number, rows: number, boatWidth: number
   return terrain;
 }
 
+export function createRestaurantTerrain(cols: number, rows: number): TerrainGrid {
+  const terrain = createFilledTerrain(cols, rows, "water");
+
+  markTiles(terrain, "plain", 5, 8, 24, 16);
+  markTiles(terrain, "plain", 24, 7, 39, 24);
+  markTiles(terrain, "plain", 20, 17, 26, 26);
+  markTiles(terrain, "plain", 7, 17, 14, 23);
+
+  markTiles(terrain, "water", 5, 3, 24, 7);
+  markTiles(terrain, "water", 4, 5, 8, 14);
+  markTiles(terrain, "water", 9, 13, 19, 15);
+  markTiles(terrain, "water", 22, 9, 24, 15);
+
+  markTiles(terrain, "water", 25, 8, 33, 11);
+  markTiles(terrain, "water", 29, 12, 31, 14);
+  markTiles(terrain, "water", 35, 12, 38, 15);
+  markTiles(terrain, "water", 28, 18, 36, 21);
+  markTiles(terrain, "water", 37, 20, 39, 24);
+  markTiles(terrain, "water", 21, 22, 26, 24);
+  markTiles(terrain, "water", 9, 19, 13, 22);
+
+  markTiles(terrain, "plain", 22, 25, 25, 26);
+
+  return terrain;
+}
+
+export function isRestaurantInteriorTile(tileX: number, tileY: number): boolean {
+  const kitchenWing = tileX >= 5 && tileX <= 23 && tileY >= 4 && tileY <= 15;
+  const diningRoom = tileX >= 18 && tileX <= 38 && tileY >= 7 && tileY <= 23;
+  const frontEntry = tileX >= 20 && tileX <= 25 && tileY >= 22 && tileY <= 25;
+  const bayWindow = tileX >= 28 && tileX <= 35 && tileY >= 4 && tileY <= 8;
+  const serviceNook = tileX >= 8 && tileX <= 14 && tileY >= 15 && tileY <= 21;
+
+  return kitchenWing || diningRoom || frontEntry || bayWindow || serviceNook;
+}
+
+function markTiles(
+  terrain: TerrainGrid,
+  fill: TileKind,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+): void {
+  for (let y = startY; y <= endY; y += 1) {
+    const row = terrain[y];
+    if (!row) {
+      continue;
+    }
+
+    for (let x = startX; x <= endX; x += 1) {
+      if (x >= 0 && x < row.length) {
+        row[x] = fill;
+      }
+    }
+  }
+}
+
 export function getTileKind(
   sceneTerrains: Partial<Record<SceneId, TerrainGrid>>,
   sceneId: SceneId,
