@@ -37,10 +37,22 @@ export function createOceanTerrain(cols: number, rows: number, boatWidth: number
   const terrain = createFilledTerrain(cols, rows, "water");
   const boatStartCol = Math.floor((cols - boatWidth) / 2);
   const boatStartRow = Math.floor((rows - boatHeight) / 2);
+  const boatRows = [
+    { startOffset: 2, endOffset: boatWidth - 2 },
+    { startOffset: 1, endOffset: boatWidth - 1 },
+    { startOffset: 0, endOffset: boatWidth - 1 },
+    { startOffset: 0, endOffset: boatWidth - 2 },
+    { startOffset: 1, endOffset: boatWidth - 3 },
+  ];
 
-  for (let y = boatStartRow; y < boatStartRow + boatHeight; y += 1) {
-    for (let x = boatStartCol; x < boatStartCol + boatWidth; x += 1) {
-      terrain[y][x] = "boat";
+  for (let rowIndex = 0; rowIndex < boatHeight; rowIndex += 1) {
+    const rowShape = boatRows[rowIndex] ?? { startOffset: 0, endOffset: boatWidth - 1 };
+    const y = boatStartRow + rowIndex;
+
+    for (let x = boatStartCol + rowShape.startOffset; x <= boatStartCol + rowShape.endOffset; x += 1) {
+      if (terrain[y]?.[x] !== undefined) {
+        terrain[y][x] = "boat";
+      }
     }
   }
 

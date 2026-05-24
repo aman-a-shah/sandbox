@@ -7,6 +7,8 @@ const treesUrl = "/sprites-clean/trees_transparent.png";
 const boatUrl = "/sprites-clean/boat_transparent.png";
 const playerUrl = "/sprites-clean/Idle.png";
 const interiorUrl = "/sprites-clean/Interior.png";
+const islandFullUrl = new URL("../../../sprites/island_full.png", import.meta.url).href;
+const oceanFullUrl = new URL("../../../sprites/ocean_full.png", import.meta.url).href;
 const kitchenFullUrl = new URL("../../../sprites/kitchen_full.png", import.meta.url).href;
 const doorUrl = new URL("../../../sprites/door.png", import.meta.url).href;
 
@@ -34,6 +36,8 @@ const artImages = {
   boat: loadImage(boatUrl),
   player: loadImage(playerUrl),
   interior: loadImage(interiorUrl),
+  islandFull: loadImage(islandFullUrl),
+  oceanFull: loadImage(oceanFullUrl),
   kitchenFull: loadImage(kitchenFullUrl),
   door: loadImage(doorUrl),
 };
@@ -123,6 +127,16 @@ export function drawPixelScene(renderCtx: CanvasRenderingContext2D, state: BaseS
 
   if (state.currentSceneId === "shop") {
     drawRestaurantScene(renderCtx, state, startCol, endCol, startRow, endRow);
+    return;
+  }
+
+  if (state.currentSceneId === "ocean" && artImages.oceanFull.complete) {
+    drawFullSceneImage(renderCtx, state, artImages.oceanFull);
+    return;
+  }
+
+  if (state.currentSceneId === "island" && artImages.islandFull.complete) {
+    drawFullSceneImage(renderCtx, state, artImages.islandFull);
     return;
   }
 
@@ -240,6 +254,14 @@ function drawRestaurantScene(
   }
 
   drawDoorSprite(renderCtx, state);
+}
+
+function drawFullSceneImage(renderCtx: CanvasRenderingContext2D, state: BaseState, image: HTMLImageElement): void {
+  const scene = state.scenes[state.currentSceneId];
+  const worldWidth = scene.worldCols * BASE_CONSTANTS.TILE_SIZE;
+  const worldHeight = scene.worldRows * BASE_CONSTANTS.TILE_SIZE;
+
+  renderCtx.drawImage(image, -state.camera.x, -state.camera.y, worldWidth, worldHeight);
 }
 
 function drawDoorSprite(renderCtx: CanvasRenderingContext2D, state: BaseState): void {
