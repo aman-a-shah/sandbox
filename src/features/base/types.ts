@@ -64,6 +64,7 @@ export interface BaseStatusSnapshot {
   fishingTension: number | null;
   inventoryUsedSlots: number;
   inventoryTotalSlots: number;
+  fishingHabitat?: string | null;
 }
 
 export type BasePoint = Vector2;

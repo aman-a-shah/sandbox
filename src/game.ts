@@ -2,6 +2,13 @@ import type { AppState } from "./app/types";
 import { GAME_CONFIG } from "./core/config/gameConfig";
 import { getCanvasCoordinates, mustGet2DContext, mustGetElement, resizeCanvasDisplay } from "./core/utils";
 import {
+  getCraftableRecipesForInventory,
+  getDefaultMasterRecipes,
+  getFallbackHabitatJsonPath,
+  getFallbackHabitatName,
+  rollRandomCatchFromFallbackHabitat,
+} from "./data/generated-content";
+import {
   BASE_CONSTANTS,
   centerCameraOnPlayer,
   createBaseState,
@@ -21,9 +28,22 @@ import {
 } from "./features/base";
 import type { SceneId } from "./features/base";
 import { createFishingState, drawFishingHud, drawFishingWorldLayer, handleFishingClick, isFishingInputLocked, resetFishingState, updateFishing } from "./features/fishing";
-import { INVENTORY_CAPACITY, createInventoryState, getInventoryUsedSlots, getRandomPlaceholderFish, renderInventory, setInventoryOpen, syncInventoryOverlay, tryAddFishToInventory } from "./features/inventory";
+import {
+  INVENTORY_CAPACITY,
+  createInventoryState,
+  getDiscoveredFish,
+  getInventoryFish,
+  getInventoryUsedSlots,
+  registerDiscoveredFish,
+  renderInventory,
+  selectDiscoveredFish,
+  setInventoryOpen,
+  setInventoryView,
+  syncInventoryOverlay,
+  tryAddFishToInventory,
+} from "./features/inventory";
 import type { InventoryDomRefs } from "./features/inventory";
-import { closeRecipeBook, createShopState, drawWorkstation, getRecipeBookPageCount, isPlayerNearWorkstation, openRecipeBook, renderRecipeBook, updateWorkstationPrompt } from "./features/shop";
+import { closeRecipeBook, createShopState, drawWorkstation, getRecipeBookPageCount, isPlayerNearWorkstation, openRecipeBook, renderRecipeBook, setRecipeBookRecipes, updateWorkstationPrompt } from "./features/shop";
 import type { ShopDomRefs } from "./features/shop";
 
 const canvas = mustGetElement<HTMLCanvasElement>("game-canvas");
@@ -33,6 +53,8 @@ const debugOverlayEl = mustGetElement<HTMLElement>("debug-overlay");
 const statusReadoutEl = mustGetElement<HTMLDListElement>("status-readout");
 
 const inventoryToggleButtonEl = mustGetElement<HTMLButtonElement>("inventory-toggle");
+const inventoryBagTabButtonEl = mustGetElement<HTMLButtonElement>("inventory-tab-bag");
+const inventoryDiscoveredTabButtonEl = mustGetElement<HTMLButtonElement>("inventory-tab-discovered");
 const inventoryOverlayEl = mustGetElement<HTMLElement>("inventory-overlay");
 const inventoryCloseButtonEl = mustGetElement<HTMLButtonElement>("inventory-close");
 const inventoryGridEl = mustGetElement<HTMLDivElement>("inventory-grid");
@@ -50,6 +72,8 @@ const recipeBookSelectionStatusEl = mustGetElement<HTMLElement>("recipe-book-sel
 
 const inventoryDomRefs: InventoryDomRefs = {
   toggleButtonEl: inventoryToggleButtonEl,
+  bagTabButtonEl: inventoryBagTabButtonEl,
+  discoveredTabButtonEl: inventoryDiscoveredTabButtonEl,
   overlayEl: inventoryOverlayEl,
   gridEl: inventoryGridEl,
   detailsEl: inventoryDetailsEl,
@@ -77,6 +101,9 @@ const appState: AppState = {
   lastFrameTime: performance.now(),
 };
 
+let currentMasterRecipes = getDefaultMasterRecipes();
+const pendingRecipeGenerations = new Set<string>();
+
 document.documentElement.style.setProperty("--global-scale", String(BASE_CONSTANTS.GLOBAL_SCALE));
 
 canvas.width = BASE_CONSTANTS.RENDER_WIDTH;
@@ -92,6 +119,8 @@ window.addEventListener("resize", () => resizeCanvasDisplay(canvas, BASE_CONSTAN
 
 setPlayerSpawn(appState.base, appState.base.currentSceneId);
 centerCameraOnPlayer(appState.base);
+refreshCraftableRecipes();
+void hydrateMasterRecipes();
 renderStatusReadout();
 syncInventoryOverlay(inventoryDomRefs, appState.inventory);
 renderInventory(inventoryDomRefs, appState.inventory);
@@ -149,6 +178,18 @@ inventoryToggleButtonEl.addEventListener("click", () => {
 });
 
 inventoryCloseButtonEl.addEventListener("click", closeInventory);
+inventoryBagTabButtonEl.addEventListener("click", () => {
+  setInventoryView(appState.inventory, "bag");
+  renderInventory(inventoryDomRefs, appState.inventory);
+});
+inventoryDiscoveredTabButtonEl.addEventListener("click", () => {
+  setInventoryView(appState.inventory, "discovered");
+  const discoveredFish = getDiscoveredFish(appState.inventory);
+  if (discoveredFish.length > 0 && appState.inventory.selectedDiscoveredFishId === null) {
+    selectDiscoveredFish(appState.inventory, discoveredFish[0].id);
+  }
+  renderInventory(inventoryDomRefs, appState.inventory);
+});
 inventoryOverlayEl.addEventListener("click", (event: MouseEvent) => {
   if (event.target === inventoryOverlayEl) {
     closeInventory();
@@ -167,7 +208,7 @@ recipeBookPrevButtonEl.addEventListener("click", () => {
 });
 
 recipeBookNextButtonEl.addEventListener("click", () => {
-  const lastPageIndex = getRecipeBookPageCount() - 1;
+  const lastPageIndex = getRecipeBookPageCount(appState.shop.recipeBook) - 1;
   if (appState.shop.recipeBook.currentPage >= lastPageIndex) {
     return;
   }
@@ -201,7 +242,10 @@ function update(dt: number): void {
     getTileKind: (sceneId, tileX, tileY) => getTileKind(appState.base.sceneTerrains, sceneId, tileX, tileY),
     getRodOriginWorld,
     onCatchAttempt: attemptCatch,
-    onCatchAdded: () => renderInventory(inventoryDomRefs, appState.inventory),
+    onCatchAdded: () => {
+      refreshCraftableRecipes();
+      renderInventory(inventoryDomRefs, appState.inventory);
+    },
   });
   updateWorkstationPromptVisibility();
 
@@ -265,6 +309,7 @@ function openInventory(): void {
 
   closeRecipeBookOverlay();
   setInventoryOpen(appState.inventory, true);
+  refreshCraftableRecipes();
   syncInventoryOverlay(inventoryDomRefs, appState.inventory);
   renderInventory(inventoryDomRefs, appState.inventory);
   updateWorkstationPromptVisibility();
@@ -294,6 +339,7 @@ function openRecipeBookOverlay(): void {
   }
 
   closeInventory();
+  refreshCraftableRecipes();
   openRecipeBook(appState.shop.recipeBook, shopDomRefs);
   renderRecipeBook(appState.shop.recipeBook, shopDomRefs);
   updateWorkstationPromptVisibility();
@@ -339,12 +385,87 @@ function isInputLocked(): boolean {
 }
 
 function attemptCatch(): { added: boolean; fishName: string } {
-  const caughtFish = getRandomPlaceholderFish();
+  const caughtFish = rollRandomCatchFromFallbackHabitat();
+  registerDiscoveredFish(appState.inventory, caughtFish);
   const addResult = tryAddFishToInventory(appState.inventory, caughtFish);
+  if (addResult.added) {
+    void maybeGenerateRecipesForCaughtFish(caughtFish.name);
+  }
   return {
     added: addResult.added,
     fishName: caughtFish.name,
   };
+}
+
+function refreshCraftableRecipes(): void {
+  const inventoryFish = getInventoryFish(appState.inventory);
+  const discoveredFish = getDiscoveredFish(appState.inventory);
+  const craftableRecipes = getCraftableRecipesForInventory(inventoryFish, discoveredFish, currentMasterRecipes);
+  setRecipeBookRecipes(appState.shop.recipeBook, craftableRecipes);
+
+  if (!appState.shop.recipeBook.isOpen) {
+    return;
+  }
+
+  renderRecipeBook(appState.shop.recipeBook, shopDomRefs);
+}
+
+async function maybeGenerateRecipesForCaughtFish(fishName: string): Promise<void> {
+  const normalizedFishName = fishName.trim().toLowerCase();
+  if (!normalizedFishName || pendingRecipeGenerations.has(normalizedFishName)) {
+    return;
+  }
+
+  pendingRecipeGenerations.add(normalizedFishName);
+
+  try {
+    const response = await fetch("/api/recipes/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        fishJsonPath: getFallbackHabitatJsonPath(),
+        fishQuery: fishName,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Recipe generation failed for ${fishName}: ${response.status} ${response.statusText}`, errorText);
+      return;
+    }
+
+    const payload = (await response.json()) as { recipes?: typeof currentMasterRecipes };
+    if (payload.recipes) {
+      currentMasterRecipes = payload.recipes;
+      refreshCraftableRecipes();
+      console.info(`Recipe data refreshed for ${fishName}.`);
+    }
+  } catch (error) {
+    console.error(`Recipe generation bridge failed for ${fishName}.`, error);
+  } finally {
+    pendingRecipeGenerations.delete(normalizedFishName);
+  }
+}
+
+async function hydrateMasterRecipes(): Promise<void> {
+  try {
+    const response = await fetch("/api/recipes");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to load recipe data: ${response.status} ${response.statusText}`, errorText);
+      return;
+    }
+
+    const payload = (await response.json()) as { recipes?: typeof currentMasterRecipes };
+    if (payload.recipes) {
+      currentMasterRecipes = payload.recipes;
+      refreshCraftableRecipes();
+    }
+  } catch (error) {
+    console.error("Recipe data hydration failed.", error);
+  }
 }
 
 function updateWorkstationPromptVisibility(): void {
@@ -366,6 +487,7 @@ function renderStatusReadout(): void {
       fishingTension: appState.base.currentSceneId === "ocean" ? appState.fishing.session.tension : null,
       inventoryUsedSlots: getInventoryUsedSlots(appState.inventory),
       inventoryTotalSlots: appState.inventory.slots.length,
+      fishingHabitat: appState.base.currentSceneId === "ocean" ? getFallbackHabitatName() : null,
     },
     GAME_CONFIG.debugMode,
   );

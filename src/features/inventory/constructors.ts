@@ -9,7 +9,10 @@ export function createInventoryState(capacity = INVENTORY_CAPACITY): InventorySt
 
   return {
     isOpen: false,
+    activeView: "bag",
     selectedSlotIndex: null,
+    selectedDiscoveredFishId: null,
     slots,
+    discoveredFish: [],
   };
 }

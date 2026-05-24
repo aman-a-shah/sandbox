@@ -1,7 +1,6 @@
 import { escapeHtml } from "../../core/utils";
 import { BASE_CONSTANTS } from "../base";
 import type { BaseState } from "../base";
-import { MOCK_RECIPES } from "./config";
 import { RECIPES_PER_COLUMN, RECIPE_COLUMNS_PER_SPREAD, RECIPES_PER_SPREAD, WORKSTATION_INTERACT_TILE_DISTANCE } from "./constants";
 import type { RecipeBookState, RecipeStub, ShopDomRefs, Workstation } from "./types";
 
@@ -64,24 +63,43 @@ export function closeRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): v
   domRefs.recipeBookOverlayEl.setAttribute("aria-hidden", "true");
 }
 
-export function getRecipeBookPageCount(): number {
-  return Math.max(1, Math.ceil(MOCK_RECIPES.length / RECIPES_PER_SPREAD));
+export function setRecipeBookRecipes(state: RecipeBookState, recipes: RecipeStub[]): void {
+  state.availableRecipes = recipes;
+  const hasSelection = recipes.some((recipe) => recipe.id === state.selectedRecipeId);
+  if (!hasSelection) {
+    state.selectedRecipeId = recipes[0]?.id ?? null;
+  }
+
+  const pageCount = getRecipeBookPageCount(state);
+  state.currentPage = Math.min(state.currentPage, pageCount - 1);
 }
 
-function getRecipesForPage(pageIndex: number): RecipeStub[] {
-  const clampedPage = Math.min(Math.max(pageIndex, 0), getRecipeBookPageCount() - 1);
+export function getRecipeBookPageCount(state: RecipeBookState): number {
+  return Math.max(1, Math.ceil(state.availableRecipes.length / RECIPES_PER_SPREAD));
+}
+
+function getRecipesForPage(state: RecipeBookState, pageIndex: number): RecipeStub[] {
+  const clampedPage = Math.min(Math.max(pageIndex, 0), getRecipeBookPageCount(state) - 1);
   const startIndex = clampedPage * RECIPES_PER_SPREAD;
-  return MOCK_RECIPES.slice(startIndex, startIndex + RECIPES_PER_SPREAD);
+  return state.availableRecipes.slice(startIndex, startIndex + RECIPES_PER_SPREAD);
 }
 
 export function renderRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): void {
-  const pageCount = getRecipeBookPageCount();
+  const pageCount = getRecipeBookPageCount(state);
   state.currentPage = Math.min(Math.max(state.currentPage, 0), pageCount - 1);
-  const pageRecipes = getRecipesForPage(state.currentPage);
+  const pageRecipes = getRecipesForPage(state, state.currentPage);
   const selectedRecipe =
-    state.selectedRecipeId === null ? null : MOCK_RECIPES.find((recipe) => recipe.id === state.selectedRecipeId) ?? null;
+    state.selectedRecipeId === null ? null : state.availableRecipes.find((recipe) => recipe.id === state.selectedRecipeId) ?? null;
 
   domRefs.recipeBookGridEl.innerHTML = "";
+
+  if (state.availableRecipes.length === 0) {
+    domRefs.recipeBookPageIndicatorEl.textContent = "Page 1 / 1";
+    domRefs.recipeBookPrevButtonEl.disabled = true;
+    domRefs.recipeBookNextButtonEl.disabled = true;
+    domRefs.recipeBookSelectionStatusEl.textContent = "Catch fish to discover recipes from the generated recipe file.";
+    return;
+  }
 
   for (let columnIndex = 0; columnIndex < RECIPE_COLUMNS_PER_SPREAD; columnIndex += 1) {
     const columnEl = document.createElement("div");
@@ -93,14 +111,19 @@ export function renderRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): 
       const cardButtonEl = document.createElement("button");
       cardButtonEl.type = "button";
       cardButtonEl.className = "recipe-card";
+      if (!recipe.isCraftable) {
+        cardButtonEl.classList.add("is-locked");
+      }
       if (state.selectedRecipeId === recipe.id) {
         cardButtonEl.classList.add("is-selected");
       }
 
       cardButtonEl.innerHTML = [
-        `<h3 class=\"recipe-card-title\">${escapeHtml(recipe.name)}</h3>`,
-        `<p class=\"recipe-card-subtitle\">${escapeHtml(recipe.subtitle)}</p>`,
-        `<p class=\"recipe-card-time\">${recipe.cookTimeMinutes} min</p>`,
+        `<h3 class="recipe-card-title">${escapeHtml(recipe.name)}</h3>`,
+        `<p class="recipe-card-subtitle">${escapeHtml(recipe.subtitle)}</p>`,
+        `<p class="recipe-card-time">Needs ${recipe.requiredFishQuantity} ${escapeHtml(recipe.requiredFishName)}</p>`,
+        `<p class="recipe-card-time">${escapeHtml(recipe.availabilityLabel)}</p>`,
+        `<p class="recipe-card-time">${recipe.cookTimeMinutes} min</p>`,
       ].join("");
 
       cardButtonEl.addEventListener("click", () => {
@@ -120,7 +143,10 @@ export function renderRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): 
   domRefs.recipeBookNextButtonEl.disabled = state.currentPage >= pageCount - 1;
 
   if (selectedRecipe) {
-    domRefs.recipeBookSelectionStatusEl.textContent = `Selected recipe: ${selectedRecipe.name}`;
+    const priceText = selectedRecipe.estimatedPrice === null ? "Unknown price" : `$${selectedRecipe.estimatedPrice.toFixed(2)}`;
+    const caloriesText = selectedRecipe.calories === null ? "Unknown calories" : `${selectedRecipe.calories} kcal`;
+    domRefs.recipeBookSelectionStatusEl.textContent =
+      `Selected recipe: ${selectedRecipe.name} • ${selectedRecipe.rarity} • ${selectedRecipe.availabilityLabel} • ${priceText} • ${caloriesText}`;
   } else {
     domRefs.recipeBookSelectionStatusEl.textContent = "Select a recipe from this spread.";
   }

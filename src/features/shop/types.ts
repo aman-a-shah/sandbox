@@ -11,12 +11,25 @@ export interface RecipeStub {
   name: string;
   subtitle: string;
   cookTimeMinutes: number;
+  requiredFishName: string;
+  requiredFishScientificName: string | null;
+  requiredFishQuantity: number;
+  rarity: string;
+  estimatedPrice: number | null;
+  calories: number | null;
+  instructions: string | null;
+  isCraftable: boolean;
+  missingRequiredFishCount: number;
+  availabilityLabel: string;
 }
+
+export type RecipeBookRecipe = RecipeStub;
 
 export interface RecipeBookState {
   isOpen: boolean;
   currentPage: number;
   selectedRecipeId: string | null;
+  availableRecipes: RecipeBookRecipe[];
 }
 
 export interface ShopState {
