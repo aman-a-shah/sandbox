@@ -3,6 +3,7 @@ import { GAME_CONFIG } from "./core/config/gameConfig";
 import type { Vector2 } from "./core/types/vector";
 import { clamp, getCanvasCoordinates, mustGet2DContext, mustGetElement, resizeCanvasDisplay } from "./core/utils";
 import {
+  createCookedFoodFromRecipe,
   getDefaultHabitatId,
   getCraftableRecipesForInventory,
   getDefaultMasterRecipes,
@@ -39,11 +40,13 @@ import {
   getInventoryFish,
   getInventoryUsedSlots,
   registerDiscoveredFish,
+  removeFishFromInventory,
   renderInventory,
   selectDiscoveredFish,
   setInventoryOpen,
   setInventoryView,
   syncInventoryOverlay,
+  tryAddFoodToInventory,
   tryAddFishToInventory,
 } from "./features/inventory";
 import type { InventoryDomRefs } from "./features/inventory";
@@ -212,13 +215,15 @@ const inventoryDetailsEl = mustGetElement<HTMLDivElement>("inventory-details");
 const inventoryCapacityEl = mustGetElement<HTMLElement>("inventory-capacity");
 
 const workstationPromptEl = mustGetElement<HTMLElement>("workstation-prompt");
+const craftToastEl = mustGetElement<HTMLElement>("craft-toast");
 const recipeBookOverlayEl = mustGetElement<HTMLElement>("recipe-book-overlay");
 const recipeBookGridEl = mustGetElement<HTMLDivElement>("recipe-book-grid");
+const recipeBookDetailsEl = mustGetElement<HTMLDivElement>("recipe-book-details");
+const recipeBookCookButtonEl = mustGetElement<HTMLButtonElement>("recipe-book-cook");
 const recipeBookCloseButtonEl = mustGetElement<HTMLButtonElement>("recipe-book-close");
 const recipeBookPrevButtonEl = mustGetElement<HTMLButtonElement>("recipe-book-prev");
 const recipeBookNextButtonEl = mustGetElement<HTMLButtonElement>("recipe-book-next");
 const recipeBookPageIndicatorEl = mustGetElement<HTMLElement>("recipe-book-page-indicator");
-const recipeBookSelectionStatusEl = mustGetElement<HTMLElement>("recipe-book-selection-status");
 
 const inventoryDomRefs: InventoryDomRefs = {
   toggleButtonEl: inventoryToggleButtonEl,
@@ -234,11 +239,12 @@ const shopDomRefs: ShopDomRefs = {
   workstationPromptEl,
   recipeBookOverlayEl,
   recipeBookGridEl,
+  recipeBookDetailsEl,
+  recipeBookCookButtonEl,
   recipeBookCloseButtonEl,
   recipeBookPrevButtonEl,
   recipeBookNextButtonEl,
   recipeBookPageIndicatorEl,
-  recipeBookSelectionStatusEl,
 };
 
 const oceanHabitatRoutes = createOceanHabitatRoutes();
@@ -366,6 +372,9 @@ inventoryOverlayEl.addEventListener("click", (event: MouseEvent) => {
 });
 
 recipeBookCloseButtonEl.addEventListener("click", closeRecipeBookOverlay);
+recipeBookCookButtonEl.addEventListener("click", () => {
+  cookSelectedRecipe();
+});
 
 recipeBookPrevButtonEl.addEventListener("click", () => {
   if (appState.shop.recipeBook.currentPage <= 0) {
@@ -691,6 +700,42 @@ function refreshCraftableRecipes(): void {
   }
 
   renderRecipeBook(appState.shop.recipeBook, shopDomRefs);
+}
+
+function cookSelectedRecipe(): void {
+  const selectedRecipe = getSelectedRecipe(appState.shop.recipeBook);
+  if (!selectedRecipe || !selectedRecipe.isCraftable) {
+    return;
+  }
+
+  const normalizedRequiredName = normalizeInventoryFishName(selectedRecipe.requiredFishName);
+  const normalizedScientificName = normalizeInventoryFishName(selectedRecipe.requiredFishScientificName);
+  const removedFishCount = removeFishFromInventory(
+    appState.inventory,
+    (fish) => {
+      const candidateNames = [normalizeInventoryFishName(fish.name), normalizeInventoryFishName(fish.scientificName)];
+      return candidateNames.includes(normalizedRequiredName) || (normalizedScientificName !== "" && candidateNames.includes(normalizedScientificName));
+    },
+    selectedRecipe.requiredFishQuantity,
+  );
+
+  if (removedFishCount < selectedRecipe.requiredFishQuantity) {
+    refreshCraftableRecipes();
+    renderInventory(inventoryDomRefs, appState.inventory);
+    return;
+  }
+
+  const cookedFood = createCookedFoodFromRecipe(selectedRecipe);
+  const addResult = tryAddFoodToInventory(appState.inventory, cookedFood);
+  if (!addResult.added) {
+    console.warn(`Cooked ${selectedRecipe.name} but could not add it to inventory because the bag is full.`);
+    showCraftToast(`Cooked ${selectedRecipe.name}, but the bag is full.`);
+  } else {
+    showCraftToast(`${selectedRecipe.name} was cooked and added to your bag.`);
+  }
+
+  refreshCraftableRecipes();
+  renderInventory(inventoryDomRefs, appState.inventory);
 }
 
 async function maybeGenerateRecipesForCaughtFish(fishName: string): Promise<void> {

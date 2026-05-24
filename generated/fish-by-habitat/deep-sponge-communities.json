@@ -18,7 +18,7 @@
     ]
   },
   "notes": {
-    "likelyCatchPercent": "Normalized proxy based on MarLIN habitat fit plus FishBase depth, habitat text, size, and fishery-use cues across the returned fish set.",
+    "likelyCatchPercent": "Contrast-amplified normalized proxy based on MarLIN habitat fit plus FishBase depth, habitat text, size, and fishery-use cues across the returned fish set. Values are widened so each habitat has clearer common and legendary catches and still sum to 100%.",
     "observedSpeciesRecordPercent": "Normalized proxy based on habitat fit weighted by WoRMS distribution record counts, with a small FishBase depth-data bonus when available.",
     "fishingActivityAssociatedPercent": "Normalized proxy based on habitat fit, FishBase fishery-use and environment cues, fish mobility/environment traits, and habitat accessibility. This is not a direct Global Fishing Watch species measurement.",
     "sourceApis": [
@@ -51,7 +51,7 @@
         "Scheldt estuary"
       ],
       "habitatFitPercent": 60,
-      "likelyCatchPercent": 8.77,
+      "likelyCatchPercent": 6.27,
       "observedSpeciesRecordPercent": 11.32,
       "fishingActivityAssociatedPercent": 9.17
     },
@@ -76,7 +76,7 @@
         "Black Sea"
       ],
       "habitatFitPercent": 60,
-      "likelyCatchPercent": 8.17,
+      "likelyCatchPercent": 4.35,
       "observedSpeciesRecordPercent": 8.87,
       "fishingActivityAssociatedPercent": 7.99
     },
@@ -101,7 +101,7 @@
         "North East Atlantic"
       ],
       "habitatFitPercent": 60,
-      "likelyCatchPercent": 9.37,
+      "likelyCatchPercent": 19.71,
       "observedSpeciesRecordPercent": 9.52,
       "fishingActivityAssociatedPercent": 8.49
     },
@@ -126,7 +126,7 @@
         "Swedish Exclusive Economic Zone"
       ],
       "habitatFitPercent": 60,
-      "likelyCatchPercent": 9.37,
+      "likelyCatchPercent": 17.16,
       "observedSpeciesRecordPercent": 4.66,
       "fishingActivityAssociatedPercent": 8.49
     },
@@ -151,7 +151,7 @@
         "Westerschelde"
       ],
       "habitatFitPercent": 60,
-      "likelyCatchPercent": 8.17,
+      "likelyCatchPercent": 3.28,
       "observedSpeciesRecordPercent": 8.62,
       "fishingActivityAssociatedPercent": 8.66
     },
@@ -176,7 +176,7 @@
         "Belgian Exclusive Economic Zone"
       ],
       "habitatFitPercent": 60,
-      "likelyCatchPercent": 9.37,
+      "likelyCatchPercent": 14.79,
       "observedSpeciesRecordPercent": 11.06,
       "fishingActivityAssociatedPercent": 9.17
     },
@@ -201,7 +201,7 @@
         "British Isles"
       ],
       "habitatFitPercent": 60,
-      "likelyCatchPercent": 9.37,
+      "likelyCatchPercent": 12.6,
       "observedSpeciesRecordPercent": 8.87,
       "fishingActivityAssociatedPercent": 8.92
     },
@@ -226,7 +226,7 @@
         "Westerschelde"
       ],
       "habitatFitPercent": 60,
-      "likelyCatchPercent": 9.37,
+      "likelyCatchPercent": 10.57,
       "observedSpeciesRecordPercent": 11.32,
       "fishingActivityAssociatedPercent": 8.92
     },
@@ -251,7 +251,7 @@
         "Oosterschelde"
       ],
       "habitatFitPercent": 60,
-      "likelyCatchPercent": 8.97,
+      "likelyCatchPercent": 8.09,
       "observedSpeciesRecordPercent": 8.62,
       "fishingActivityAssociatedPercent": 8.92
     },
@@ -276,7 +276,7 @@
         "European waters (ERMS scope)"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 6.73,
+      "likelyCatchPercent": 1.68,
       "observedSpeciesRecordPercent": 6.89,
       "fishingActivityAssociatedPercent": 7.32
     },
@@ -301,7 +301,7 @@
         "Belgian Exclusive Economic Zone"
       ],
       "habitatFitPercent": 38,
-      "likelyCatchPercent": 5.83,
+      "likelyCatchPercent": 0.47,
       "observedSpeciesRecordPercent": 5.24,
       "fishingActivityAssociatedPercent": 6.81
     },
@@ -326,7 +326,7 @@
         "Belgian Exclusive Economic Zone"
       ],
       "habitatFitPercent": 36,
-      "likelyCatchPercent": 6.49,
+      "likelyCatchPercent": 1.03,
       "observedSpeciesRecordPercent": 5.01,
       "fishingActivityAssociatedPercent": 7.15
     }

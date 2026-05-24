@@ -9,10 +9,10 @@ export interface Workstation {
 export interface RecipeStub {
   id: string;
   name: string;
-  subtitle: string;
   cookTimeMinutes: number;
   requiredFishName: string;
   requiredFishScientificName: string | null;
+  currentFishQuantity: number;
   requiredFishQuantity: number;
   rarity: string;
   estimatedPrice: number | null;
@@ -21,6 +21,16 @@ export interface RecipeStub {
   isCraftable: boolean;
   missingRequiredFishCount: number;
   availabilityLabel: string;
+  summary: string | null;
+  dishTypes: string[];
+  cuisines: string[];
+  diets: string[];
+  servingsLabel: string;
+  nutritionLines: string[];
+  ingredients: Array<{
+    text: string;
+    isRequiredFishIngredient: boolean;
+  }>;
 }
 
 export type RecipeBookRecipe = RecipeStub;
@@ -41,9 +51,10 @@ export interface ShopDomRefs {
   workstationPromptEl: HTMLElement;
   recipeBookOverlayEl: HTMLElement;
   recipeBookGridEl: HTMLDivElement;
+  recipeBookDetailsEl: HTMLDivElement;
+  recipeBookCookButtonEl: HTMLButtonElement;
   recipeBookCloseButtonEl: HTMLButtonElement;
   recipeBookPrevButtonEl: HTMLButtonElement;
   recipeBookNextButtonEl: HTMLButtonElement;
   recipeBookPageIndicatorEl: HTMLElement;
-  recipeBookSelectionStatusEl: HTMLElement;
 }

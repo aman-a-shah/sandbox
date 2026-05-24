@@ -1,147 +1,22 @@
 {
-  "generatedAt": "2026-05-24T18:50:05.957Z",
-  "fishRecipeCount": 7,
+  "generatedAt": "2026-05-24T20:18:31.335Z",
+  "fishRecipeCount": 12,
   "fishRecipes": [
-    {
-      "fish": {
-        "commonName": "dragonet",
-        "scientificName": "Callionymus lyra",
-        "likelyCatchPercent": 14.4,
-        "observedSpeciesRecordPercent": 16.13,
-        "fishingActivityAssociatedPercent": 13.92,
-        "sizeCategory": "Medium-large(21-50cm)",
-        "averageDepthMeters": 17.5
-      },
-      "notes": {
-        "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
-        "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood or fish ingredients are also present.",
-        "pricing": "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
-        "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
-        "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
-      },
-      "recipeCount": 1,
-      "recipes": [
-        {
-          "requiredFishIngredients": [
-            {
-              "name": "dragonet",
-              "amount": 2,
-              "unit": "fish",
-              "original": "2 dragonet"
-            }
-          ],
-          "recipeId": "fallback-dragonet",
-          "title": "Roasted dragonet with Garlic and Herbs",
-          "sourceUrl": null,
-          "image": null,
-          "readyInMinutes": 32,
-          "servings": 2,
-          "popularityScore": null,
-          "fishUsed": {
-            "commonName": "dragonet",
-            "scientificName": "Callionymus lyra",
-            "ingredientMatched": "dragonet",
-            "quantityWholeFish": 2,
-            "rawAmount": 2,
-            "rawUnit": "fish"
-          },
-          "rarity": "legendary",
-          "estimatedPrice": {
-            "currency": "USD",
-            "total": 25.98,
-            "basePriceFromApi": 14
-          },
-          "nutrition": {
-            "calories": 430,
-            "protein": 32,
-            "fat": 24,
-            "carbohydrates": 8,
-            "sodium": 410,
-            "servingSize": null,
-            "servingUnit": null
-          },
-          "recipe": {
-            "summary": "Fallback generated recipe for dragonet because Spoonacular did not return a matching result.",
-            "dishTypes": [
-              "main course",
-              "dinner"
-            ],
-            "cuisines": [
-              "European"
-            ],
-            "diets": [
-              "pescatarian"
-            ],
-            "instructions": "Season the dragonet, roast until cooked through, and finish with garlic, herbs, and lemon.",
-            "ingredients": [
-              {
-                "name": "2 dragonet fillets",
-                "amount": 2,
-                "unit": "fish",
-                "original": "2 dragonet fillets",
-                "isRequiredFishIngredient": true
-              },
-              {
-                "name": "1 tbsp olive oil",
-                "amount": null,
-                "unit": null,
-                "original": "1 tbsp olive oil",
-                "isRequiredFishIngredient": false
-              },
-              {
-                "name": "2 cloves garlic",
-                "amount": null,
-                "unit": null,
-                "original": "2 cloves garlic",
-                "isRequiredFishIngredient": false
-              },
-              {
-                "name": "1 tbsp mixed herbs",
-                "amount": null,
-                "unit": null,
-                "original": "1 tbsp mixed herbs",
-                "isRequiredFishIngredient": false
-              },
-              {
-                "name": "salt",
-                "amount": null,
-                "unit": null,
-                "original": "salt",
-                "isRequiredFishIngredient": false
-              },
-              {
-                "name": "black pepper",
-                "amount": null,
-                "unit": null,
-                "original": "black pepper",
-                "isRequiredFishIngredient": false
-              },
-              {
-                "name": "1 lemon",
-                "amount": null,
-                "unit": null,
-                "original": "1 lemon",
-                "isRequiredFishIngredient": false
-              }
-            ]
-          }
-        }
-      ]
-    },
     {
       "fish": {
         "commonName": "common dragonet",
         "scientificName": "Callionymus lyra",
-        "likelyCatchPercent": 8.63,
-        "observedSpeciesRecordPercent": 11.08,
-        "fishingActivityAssociatedPercent": 8.85,
+        "likelyCatchPercent": 13.48,
+        "observedSpeciesRecordPercent": 11.37,
+        "fishingActivityAssociatedPercent": 9.74,
         "sizeCategory": "Medium-large(21-50cm)",
-        "averageDepthMeters": 17.5
+        "averageDepthMeters": 17.5,
+        "fishBaseCommonLengthCm": 15
       },
       "notes": {
         "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
         "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
-        "pricing": "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
         "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
         "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
       },
@@ -174,7 +49,7 @@
           "rarity": "legendary",
           "estimatedPrice": {
             "currency": "USD",
-            "total": 26.79,
+            "total": 45.02,
             "basePriceFromApi": 14
           },
           "nutrition": {
@@ -258,16 +133,17 @@
       "fish": {
         "commonName": "goldsinny",
         "scientificName": "Ctenolabrus rupestris",
-        "likelyCatchPercent": 8,
-        "observedSpeciesRecordPercent": 8.69,
-        "fishingActivityAssociatedPercent": 7.67,
+        "likelyCatchPercent": 1.56,
+        "observedSpeciesRecordPercent": 8.91,
+        "fishingActivityAssociatedPercent": 8.05,
         "sizeCategory": "Medium(11-20 cm)",
-        "averageDepthMeters": 10.5
+        "averageDepthMeters": 10.5,
+        "fishBaseCommonLengthCm": null
       },
       "notes": {
         "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
         "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
-        "pricing": "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
         "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
         "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
       },
@@ -300,7 +176,7 @@
           "rarity": "legendary",
           "estimatedPrice": {
             "currency": "USD",
-            "total": 26.88,
+            "total": 100.8,
             "basePriceFromApi": 14
           },
           "nutrition": {
@@ -384,16 +260,17 @@
       "fish": {
         "commonName": "tompot blenny",
         "scientificName": "Parablennius gattorugine",
-        "likelyCatchPercent": 8,
-        "observedSpeciesRecordPercent": 8.44,
-        "fishingActivityAssociatedPercent": 8.35,
+        "likelyCatchPercent": 5.66,
+        "observedSpeciesRecordPercent": 8.66,
+        "fishingActivityAssociatedPercent": 9.01,
         "sizeCategory": "Medium-large(21-50cm)",
-        "averageDepthMeters": 17.5
+        "averageDepthMeters": 17.5,
+        "fishBaseCommonLengthCm": null
       },
       "notes": {
         "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
         "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
-        "pricing": "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
         "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
         "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
       },
@@ -426,7 +303,7 @@
           "rarity": "legendary",
           "estimatedPrice": {
             "currency": "USD",
-            "total": 26.88,
+            "total": 74.92,
             "basePriceFromApi": 14
           },
           "nutrition": {
@@ -510,16 +387,17 @@
       "fish": {
         "commonName": "seahorse",
         "scientificName": "Hippocampus hippocampus",
-        "likelyCatchPercent": 5.56,
+        "likelyCatchPercent": 0.75,
         "observedSpeciesRecordPercent": 4.92,
         "fishingActivityAssociatedPercent": 6.49,
         "sizeCategory": "Medium(11-20 cm)",
-        "averageDepthMeters": 30
+        "averageDepthMeters": 30,
+        "fishBaseCommonLengthCm": null
       },
       "notes": {
         "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
         "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
-        "pricing": "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
         "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
         "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
       },
@@ -552,7 +430,7 @@
           "rarity": "legendary",
           "estimatedPrice": {
             "currency": "USD",
-            "total": 27.22,
+            "total": 100.8,
             "basePriceFromApi": 14
           },
           "nutrition": {
@@ -636,16 +514,17 @@
       "fish": {
         "commonName": "European plaice",
         "scientificName": "Pleuronectes platessa",
-        "likelyCatchPercent": 9.25,
-        "observedSpeciesRecordPercent": 10.83,
-        "fishingActivityAssociatedPercent": 8.85,
+        "likelyCatchPercent": 16.87,
+        "observedSpeciesRecordPercent": 11.11,
+        "fishingActivityAssociatedPercent": 9.74,
         "sizeCategory": "Large(>50cm)",
-        "averageDepthMeters": 30
+        "averageDepthMeters": 30,
+        "fishBaseCommonLengthCm": 40
       },
       "notes": {
         "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
         "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
-        "pricing": "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
         "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
         "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
       },
@@ -678,7 +557,7 @@
           "rarity": "legendary",
           "estimatedPrice": {
             "currency": "USD",
-            "total": 30.52,
+            "total": 50.66,
             "basePriceFromApi": 16
           },
           "nutrition": {
@@ -769,16 +648,17 @@
       "fish": {
         "commonName": "leopard-spotted goby",
         "scientificName": "Thorogobius ephippiatus",
-        "likelyCatchPercent": 7,
-        "observedSpeciesRecordPercent": 7.23,
-        "fishingActivityAssociatedPercent": 7.34,
+        "likelyCatchPercent": 2.86,
+        "observedSpeciesRecordPercent": 8.35,
+        "fishingActivityAssociatedPercent": 8.05,
         "sizeCategory": "Medium(11-20 cm)",
-        "averageDepthMeters": 9
+        "averageDepthMeters": 9,
+        "fishBaseCommonLengthCm": null
       },
       "notes": {
         "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
         "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
-        "pricing": "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
         "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
         "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
       },
@@ -811,7 +691,7 @@
           "rarity": "legendary",
           "estimatedPrice": {
             "currency": "USD",
-            "total": 27.02,
+            "total": 92.66,
             "basePriceFromApi": 14
           },
           "nutrition": {
@@ -842,6 +722,800 @@
                 "amount": 2,
                 "unit": "fish",
                 "original": "2 leopard-spotted goby fillets",
+                "isRequiredFishIngredient": true
+              },
+              {
+                "name": "1 tbsp olive oil",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp olive oil",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "2 cloves garlic",
+                "amount": null,
+                "unit": null,
+                "original": "2 cloves garlic",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 tbsp mixed herbs",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp mixed herbs",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "salt",
+                "amount": null,
+                "unit": null,
+                "original": "salt",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "black pepper",
+                "amount": null,
+                "unit": null,
+                "original": "black pepper",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 lemon",
+                "amount": null,
+                "unit": null,
+                "original": "1 lemon",
+                "isRequiredFishIngredient": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "fish": {
+        "commonName": "cuckoo wrasse",
+        "scientificName": "Labrus mixtus",
+        "likelyCatchPercent": 9.85,
+        "observedSpeciesRecordPercent": 4.68,
+        "fishingActivityAssociatedPercent": 8.77,
+        "sizeCategory": "Medium-large(21-50cm)",
+        "averageDepthMeters": 60,
+        "fishBaseCommonLengthCm": 30
+      },
+      "notes": {
+        "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
+        "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
+        "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
+        "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
+      },
+      "recipeCount": 1,
+      "recipes": [
+        {
+          "requiredFishIngredients": [
+            {
+              "name": "cuckoo wrasse",
+              "amount": 2,
+              "unit": "fish",
+              "original": "2 cuckoo wrasse"
+            }
+          ],
+          "recipeId": "fallback-cuckoo-wrasse",
+          "title": "Roasted cuckoo wrasse with Garlic and Herbs",
+          "sourceUrl": null,
+          "image": null,
+          "readyInMinutes": 32,
+          "servings": 2,
+          "popularityScore": null,
+          "fishUsed": {
+            "commonName": "cuckoo wrasse",
+            "scientificName": "Labrus mixtus",
+            "ingredientMatched": "cuckoo wrasse",
+            "quantityWholeFish": 2,
+            "rawAmount": 2,
+            "rawUnit": "fish"
+          },
+          "rarity": "legendary",
+          "estimatedPrice": {
+            "currency": "USD",
+            "total": 57.7,
+            "basePriceFromApi": 14
+          },
+          "nutrition": {
+            "calories": 430,
+            "protein": 32,
+            "fat": 24,
+            "carbohydrates": 8,
+            "sodium": 410,
+            "servingSize": null,
+            "servingUnit": null
+          },
+          "recipe": {
+            "summary": "Fallback generated recipe for cuckoo wrasse because Spoonacular did not return a matching result.",
+            "dishTypes": [
+              "main course",
+              "dinner"
+            ],
+            "cuisines": [
+              "European"
+            ],
+            "diets": [
+              "pescatarian"
+            ],
+            "instructions": "Season the cuckoo wrasse, roast until cooked through, and finish with garlic, herbs, and lemon.",
+            "ingredients": [
+              {
+                "name": "2 cuckoo wrasse fillets",
+                "amount": 2,
+                "unit": "fish",
+                "original": "2 cuckoo wrasse fillets",
+                "isRequiredFishIngredient": true
+              },
+              {
+                "name": "1 tbsp olive oil",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp olive oil",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "2 cloves garlic",
+                "amount": null,
+                "unit": null,
+                "original": "2 cloves garlic",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 tbsp mixed herbs",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp mixed herbs",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "salt",
+                "amount": null,
+                "unit": null,
+                "original": "salt",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "black pepper",
+                "amount": null,
+                "unit": null,
+                "original": "black pepper",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 lemon",
+                "amount": null,
+                "unit": null,
+                "original": "1 lemon",
+                "isRequiredFishIngredient": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "fish": {
+        "commonName": "ballan wrasse",
+        "scientificName": "Labrus bergylta",
+        "likelyCatchPercent": 11.14,
+        "observedSpeciesRecordPercent": 9.57,
+        "fishingActivityAssociatedPercent": 8.77,
+        "sizeCategory": "Medium-large(21-50cm)",
+        "averageDepthMeters": 16,
+        "fishBaseCommonLengthCm": 50
+      },
+      "notes": {
+        "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
+        "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
+        "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
+        "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
+      },
+      "recipeCount": 1,
+      "recipes": [
+        {
+          "requiredFishIngredients": [
+            {
+              "name": "ballan wrasse",
+              "amount": 2,
+              "unit": "fish",
+              "original": "2 ballan wrasse"
+            }
+          ],
+          "recipeId": "fallback-ballan-wrasse",
+          "title": "Roasted ballan wrasse with Garlic and Herbs",
+          "sourceUrl": null,
+          "image": null,
+          "readyInMinutes": 32,
+          "servings": 2,
+          "popularityScore": null,
+          "fishUsed": {
+            "commonName": "ballan wrasse",
+            "scientificName": "Labrus bergylta",
+            "ingredientMatched": "ballan wrasse",
+            "quantityWholeFish": 2,
+            "rawAmount": 2,
+            "rawUnit": "fish"
+          },
+          "rarity": "legendary",
+          "estimatedPrice": {
+            "currency": "USD",
+            "total": 62.32,
+            "basePriceFromApi": 14
+          },
+          "nutrition": {
+            "calories": 430,
+            "protein": 32,
+            "fat": 24,
+            "carbohydrates": 8,
+            "sodium": 410,
+            "servingSize": null,
+            "servingUnit": null
+          },
+          "recipe": {
+            "summary": "Fallback generated recipe for ballan wrasse because Spoonacular did not return a matching result.",
+            "dishTypes": [
+              "main course",
+              "dinner"
+            ],
+            "cuisines": [
+              "European"
+            ],
+            "diets": [
+              "pescatarian"
+            ],
+            "instructions": "Season the ballan wrasse, roast until cooked through, and finish with garlic, herbs, and lemon.",
+            "ingredients": [
+              {
+                "name": "2 ballan wrasse fillets",
+                "amount": 2,
+                "unit": "fish",
+                "original": "2 ballan wrasse fillets",
+                "isRequiredFishIngredient": true
+              },
+              {
+                "name": "1 tbsp olive oil",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp olive oil",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "2 cloves garlic",
+                "amount": null,
+                "unit": null,
+                "original": "2 cloves garlic",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 tbsp mixed herbs",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp mixed herbs",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "salt",
+                "amount": null,
+                "unit": null,
+                "original": "salt",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "black pepper",
+                "amount": null,
+                "unit": null,
+                "original": "black pepper",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 lemon",
+                "amount": null,
+                "unit": null,
+                "original": "1 lemon",
+                "isRequiredFishIngredient": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "fish": {
+        "commonName": "cepelan",
+        "scientificName": "Trisopterus minutus",
+        "likelyCatchPercent": 4.28,
+        "observedSpeciesRecordPercent": 8.66,
+        "fishingActivityAssociatedPercent": 9.38,
+        "sizeCategory": "Medium-large(21-50cm)",
+        "averageDepthMeters": 107.5,
+        "fishBaseCommonLengthCm": 20
+      },
+      "notes": {
+        "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
+        "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
+        "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
+        "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
+      },
+      "recipeCount": 1,
+      "recipes": [
+        {
+          "requiredFishIngredients": [
+            {
+              "name": "cepelan",
+              "amount": 2,
+              "unit": "fish",
+              "original": "2 cepelan"
+            }
+          ],
+          "recipeId": "fallback-cepelan",
+          "title": "Creamy cepelan Chowder",
+          "sourceUrl": null,
+          "image": null,
+          "readyInMinutes": 45,
+          "servings": 4,
+          "popularityScore": null,
+          "fishUsed": {
+            "commonName": "cepelan",
+            "scientificName": "Trisopterus minutus",
+            "ingredientMatched": "cepelan",
+            "quantityWholeFish": 2,
+            "rawAmount": 2,
+            "rawUnit": "fish"
+          },
+          "rarity": "legendary",
+          "estimatedPrice": {
+            "currency": "USD",
+            "total": 78.18,
+            "basePriceFromApi": 13
+          },
+          "nutrition": {
+            "calories": 390,
+            "protein": 24,
+            "fat": 14,
+            "carbohydrates": 39,
+            "sodium": 560,
+            "servingSize": null,
+            "servingUnit": null
+          },
+          "recipe": {
+            "summary": "Fallback generated recipe for cepelan because Spoonacular did not return a matching result.",
+            "dishTypes": [
+              "soup",
+              "main course"
+            ],
+            "cuisines": [
+              "American"
+            ],
+            "diets": [
+              "pescatarian"
+            ],
+            "instructions": "Saute the onion and celery in butter, add potato and stock, then simmer. Stir in milk and chunks of cepelan and cook gently until tender.",
+            "ingredients": [
+              {
+                "name": "2 cepelan fillets",
+                "amount": 2,
+                "unit": "fish",
+                "original": "2 cepelan fillets",
+                "isRequiredFishIngredient": true
+              },
+              {
+                "name": "2 potatoes",
+                "amount": null,
+                "unit": null,
+                "original": "2 potatoes",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 onion",
+                "amount": null,
+                "unit": null,
+                "original": "1 onion",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "2 cups milk",
+                "amount": null,
+                "unit": null,
+                "original": "2 cups milk",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 cup stock",
+                "amount": null,
+                "unit": null,
+                "original": "1 cup stock",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 tbsp butter",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp butter",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 celery stalk",
+                "amount": null,
+                "unit": null,
+                "original": "1 celery stalk",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "salt",
+                "amount": null,
+                "unit": null,
+                "original": "salt",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "black pepper",
+                "amount": null,
+                "unit": null,
+                "original": "black pepper",
+                "isRequiredFishIngredient": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "fish": {
+        "commonName": "green pollack",
+        "scientificName": "Pollachius pollachius",
+        "likelyCatchPercent": 8.57,
+        "observedSpeciesRecordPercent": 8.91,
+        "fishingActivityAssociatedPercent": 9.38,
+        "sizeCategory": "Large(>50cm)",
+        "averageDepthMeters": 70,
+        "fishBaseCommonLengthCm": 75
+      },
+      "notes": {
+        "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
+        "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
+        "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
+        "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
+      },
+      "recipeCount": 1,
+      "recipes": [
+        {
+          "requiredFishIngredients": [
+            {
+              "name": "green pollack",
+              "amount": 2,
+              "unit": "fish",
+              "original": "2 green pollack"
+            }
+          ],
+          "recipeId": "fallback-green-pollack",
+          "title": "Herb-Crusted Baked green pollack",
+          "sourceUrl": null,
+          "image": null,
+          "readyInMinutes": 30,
+          "servings": 2,
+          "popularityScore": null,
+          "fishUsed": {
+            "commonName": "green pollack",
+            "scientificName": "Pollachius pollachius",
+            "ingredientMatched": "green pollack",
+            "quantityWholeFish": 2,
+            "rawAmount": 2,
+            "rawUnit": "fish"
+          },
+          "rarity": "legendary",
+          "estimatedPrice": {
+            "currency": "USD",
+            "total": 82.86,
+            "basePriceFromApi": 15
+          },
+          "nutrition": {
+            "calories": 470,
+            "protein": 36,
+            "fat": 18,
+            "carbohydrates": 34,
+            "sodium": 510,
+            "servingSize": null,
+            "servingUnit": null
+          },
+          "recipe": {
+            "summary": "Fallback generated recipe for green pollack because Spoonacular did not return a matching result.",
+            "dishTypes": [
+              "main course",
+              "dinner"
+            ],
+            "cuisines": [
+              "American"
+            ],
+            "diets": [
+              "pescatarian"
+            ],
+            "instructions": "Brush the green pollack with mustard, coat with herbed breadcrumbs, and bake until flaky and golden.",
+            "ingredients": [
+              {
+                "name": "2 green pollack fillets",
+                "amount": 2,
+                "unit": "fish",
+                "original": "2 green pollack fillets",
+                "isRequiredFishIngredient": true
+              },
+              {
+                "name": "1/2 cup breadcrumbs",
+                "amount": null,
+                "unit": null,
+                "original": "1/2 cup breadcrumbs",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 tbsp Dijon mustard",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp Dijon mustard",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 tbsp olive oil",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp olive oil",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 tbsp parsley",
+                "amount": null,
+                "unit": null,
+                "original": "1 tbsp parsley",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "1 tsp thyme",
+                "amount": null,
+                "unit": null,
+                "original": "1 tsp thyme",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "salt",
+                "amount": null,
+                "unit": null,
+                "original": "salt",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "black pepper",
+                "amount": null,
+                "unit": null,
+                "original": "black pepper",
+                "isRequiredFishIngredient": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "fish": {
+        "commonName": "bib",
+        "scientificName": "Trisopterus luscus",
+        "likelyCatchPercent": 7.28,
+        "observedSpeciesRecordPercent": 11.37,
+        "fishingActivityAssociatedPercent": 9.38,
+        "sizeCategory": "Medium-large(21-50cm)",
+        "averageDepthMeters": 65,
+        "fishBaseCommonLengthCm": 30
+      },
+      "notes": {
+        "quotaStrategy": "This script is designed to use two Spoonacular requests per run with a short pause between them to stay under the RapidAPI per-second rate limit, and it returns only one best recipe to stay conservative with quota.",
+        "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
+        "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
+        "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
+      },
+      "recipeCount": 1,
+      "recipes": [
+        {
+          "requiredFishIngredients": [
+            {
+              "name": "bibs garlic",
+              "amount": 6,
+              "unit": null,
+              "original": "6 bibs garlic"
+            }
+          ],
+          "recipeId": 639843,
+          "title": "Cod Fillet In Lemon Grass Shallot Sauce",
+          "sourceUrl": "https://www.foodista.com/recipe/VMPD4W74/cod-fillet-in-lemon-grass-shallot-sauce",
+          "image": "https://img.spoonacular.com/recipes/639843-556x370.jpg",
+          "readyInMinutes": 45,
+          "servings": 2,
+          "popularityScore": 44.762332916259766,
+          "fishUsed": {
+            "commonName": "bib",
+            "scientificName": "Trisopterus luscus",
+            "ingredientMatched": "bibs garlic",
+            "quantityWholeFish": 6,
+            "rawAmount": 6,
+            "rawUnit": null
+          },
+          "rarity": "legendary",
+          "estimatedPrice": {
+            "currency": "USD",
+            "total": 163.29,
+            "basePriceFromApi": 6.15
+          },
+          "nutrition": {
+            "calories": 195.71,
+            "protein": 4.18,
+            "fat": 7.08,
+            "carbohydrates": 31.98,
+            "sodium": 18.79,
+            "servingSize": 162,
+            "servingUnit": "g"
+          },
+          "recipe": {
+            "summary": "Cod Fillet In Lemon Grass Shallot Sauce is a <b>gluten free, dairy free, and pescatarian</b> recipe with 2 servings. One serving contains <b>196 calories</b>, <b>4g of protein</b>, and <b>7g of fat</b>. For <b>$3.07 per serving</b>, this recipe <b>covers 11%</b> of your daily requirements of vitamins and minerals. Only a few people really liked this hor d'oeuvre. This recipe is liked by 1 foodies and cooks. It is brought to you by Foodista. A mixture of lemon grass, vegetable oil, oysters sauce, and a handful of other ingredients are all it takes to make this recipe so delicious. From preparation to the plate, this recipe takes roughly <b>45 minutes</b>. With a spoonacular <b>score of 51%</b>, this dish is pretty good. Try <a href=\"https://spoonacular.com/recipes/roast-fillet-of-beef-with-shallot-mushroom-sauce-224369\">Roast fillet of beef with shallot & mushroom sauce</a>, <a href=\"https://spoonacular.com/recipes/cod-with-sauerkraut-and-shallot-cream-sauce-2530\">Cod with Sauerkraut and Shallot Cream Sauce</a>, and <a href=\"https://spoonacular.com/recipes/sauted-black-cod-with-shallot-lemon-vinaigrette-and-fresh-herb-2329\">Sautéed Black Cod With Shallot-lemon Vinaigrette And Fresh Herb</a> for similar recipes.",
+            "dishTypes": [
+              "antipasti",
+              "starter",
+              "snack",
+              "appetizer",
+              "antipasto",
+              "hor d'oeuvre"
+            ],
+            "cuisines": [],
+            "diets": [
+              "gluten free",
+              "dairy free",
+              "pescatarian"
+            ],
+            "instructions": "Preparation for sauce:\nDice lemon grass, sliced shallots and garlic and pound till very fine in pastel and mortar.  Add oyster sauce, chicken stock and sugar and mix well.  Scoop up 1 table spoon to marinate the cod fille.  Heat sauce pan with oil and add balance of mixture and saut till fragrant. Turn off heat. Side the pan aside.\nGrill Cod fillet:\nMarinate cod fillet with 1 table spoon of the uncooked sauce mixture for 30 to 40 minutes, uncovered at room temperature. Spray a light coat of vegetable oil to the grill pan. Heat the grill pan and place the cod fillets on the pan.  Cook the fish for 3 mins on each side or until lightly brown. Check the center of the fish for doneness.  The color should be barely opague.  Remove the fish from the grill pan and transfer to serving plate.  Heat up the cooked sauce mixture in the sauce pan and pour onto the code fillets and serve immediately.\nI served the cod with bean sprout shoots and crusty freshly baked baguette.  For those who do not like green taste of fresh bean sprout shoots, lightly stir fry it with garlic and oyster sauce.",
+            "ingredients": [
+              {
+                "name": "cod fillet",
+                "amount": 2,
+                "unit": "pieces",
+                "original": "2 pieces 200 g of cod fillet",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "vegetable oil",
+                "amount": 1,
+                "unit": "tablespoon",
+                "original": "1 tablespoon vegetable oil",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "oysters sauce",
+                "amount": 1,
+                "unit": "ts",
+                "original": "1 ts oysters sauce",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "bullion chicken stock",
+                "amount": 0.5,
+                "unit": null,
+                "original": "1/2 bullion chicken stock",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "sugar",
+                "amount": 2,
+                "unit": "ts",
+                "original": "2 ts sugar",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "lemon grass",
+                "amount": 2,
+                "unit": "stalks",
+                "original": "2 stalks of lemon grass",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "shallots",
+                "amount": 10,
+                "unit": null,
+                "original": "10 shallots",
+                "isRequiredFishIngredient": false
+              },
+              {
+                "name": "bibs garlic",
+                "amount": 6,
+                "unit": null,
+                "original": "6 bibs garlic",
+                "isRequiredFishIngredient": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "fish": {
+        "commonName": "blue skate",
+        "scientificName": "Dipturus batis",
+        "likelyCatchPercent": 18.45,
+        "observedSpeciesRecordPercent": 8.39,
+        "fishingActivityAssociatedPercent": 9.74,
+        "sizeCategory": "Large(>50cm)",
+        "averageDepthMeters": 315,
+        "fishBaseCommonLengthCm": 100
+      },
+      "notes": {
+        "quotaStrategy": "This script is designed to use two Spoonacular requests per run: one search request and one bulk detail request, and it returns only one best recipe to stay conservative with quota.",
+        "filtering": "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
+        "pricing": "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
+        "quantityInference": "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
+        "fallback": "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead."
+      },
+      "recipeCount": 1,
+      "recipes": [
+        {
+          "requiredFishIngredients": [
+            {
+              "name": "blue skate",
+              "amount": 2,
+              "unit": "fish",
+              "original": "2 blue skate"
+            }
+          ],
+          "recipeId": "fallback-blue-skate",
+          "title": "Roasted blue skate with Garlic and Herbs",
+          "sourceUrl": null,
+          "image": null,
+          "readyInMinutes": 32,
+          "servings": 2,
+          "popularityScore": null,
+          "fishUsed": {
+            "commonName": "blue skate",
+            "scientificName": "Dipturus batis",
+            "ingredientMatched": "blue skate",
+            "quantityWholeFish": 2,
+            "rawAmount": 2,
+            "rawUnit": "fish"
+          },
+          "rarity": "legendary",
+          "estimatedPrice": {
+            "currency": "USD",
+            "total": 63.98,
+            "basePriceFromApi": 14
+          },
+          "nutrition": {
+            "calories": 430,
+            "protein": 32,
+            "fat": 24,
+            "carbohydrates": 8,
+            "sodium": 410,
+            "servingSize": null,
+            "servingUnit": null
+          },
+          "recipe": {
+            "summary": "Fallback generated recipe for blue skate because Spoonacular did not return a matching result.",
+            "dishTypes": [
+              "main course",
+              "dinner"
+            ],
+            "cuisines": [
+              "European"
+            ],
+            "diets": [
+              "pescatarian"
+            ],
+            "instructions": "Season the blue skate, roast until cooked through, and finish with garlic, herbs, and lemon.",
+            "ingredients": [
+              {
+                "name": "2 blue skate fillets",
+                "amount": 2,
+                "unit": "fish",
+                "original": "2 blue skate fillets",
                 "isRequiredFishIngredient": true
               },
               {

@@ -525,8 +525,9 @@ const enrichFish = async (record, marlinSpeciesByName) => {
   };
 };
 
-const normalizePercentages = (items, scoreAccessor, fieldName) => {
-  const total = items.reduce((sum, item) => sum + Math.max(0, scoreAccessor(item)), 0);
+const assignPercentagesFromWeights = (items, weights, fieldName) => {
+  const sanitizedWeights = weights.map((weight) => Math.max(0, Number(weight) || 0));
+  const total = sanitizedWeights.reduce((sum, weight) => sum + weight, 0);
 
   if (total <= 0) {
     items.forEach((item) => {
@@ -535,9 +536,82 @@ const normalizePercentages = (items, scoreAccessor, fieldName) => {
     return;
   }
 
-  items.forEach((item) => {
-    item[fieldName] = Number(((Math.max(0, scoreAccessor(item)) / total) * 100).toFixed(2));
+  const rawBasisPoints = sanitizedWeights.map((weight) => (weight / total) * 10000);
+  const flooredBasisPoints = rawBasisPoints.map((value) => Math.floor(value));
+  let remainder = 10000 - flooredBasisPoints.reduce((sum, value) => sum + value, 0);
+
+  const rankedRemainders = rawBasisPoints
+    .map((value, index) => ({
+      index,
+      fractional: value - flooredBasisPoints[index],
+    }))
+    .sort((left, right) => right.fractional - left.fractional);
+
+  for (let index = 0; index < rankedRemainders.length && remainder > 0; index += 1) {
+    flooredBasisPoints[rankedRemainders[index].index] += 1;
+    remainder -= 1;
+  }
+
+  items.forEach((item, index) => {
+    item[fieldName] = Number((flooredBasisPoints[index] / 100).toFixed(2));
   });
+};
+
+const normalizePercentages = (items, scoreAccessor, fieldName) => {
+  assignPercentagesFromWeights(
+    items,
+    items.map((item) => scoreAccessor(item)),
+    fieldName,
+  );
+};
+
+const normalizeLikelyCatchPercentages = (items, habitat) => {
+  if (items.length === 0) {
+    return;
+  }
+
+  const ranked = items.map((item, index) => ({
+    index,
+    item,
+    rawScore: Math.max(0.25, scoreLikelyCatch(item, habitat)),
+  }));
+
+  ranked.sort((left, right) => right.rawScore - left.rawScore);
+
+  let weights = ranked.map((entry, rankIndex) => {
+    const rankRatio = ranked.length <= 1 ? 0 : rankIndex / (ranked.length - 1);
+    const dominanceMultiplier = 2.8 - rankRatio * 2.4;
+    return Math.pow(entry.rawScore, 1.4) * dominanceMultiplier;
+  });
+
+  const getSpread = (candidateWeights) => {
+    const total = candidateWeights.reduce((sum, weight) => sum + weight, 0);
+    return candidateWeights.map((weight) => (weight / total) * 100);
+  };
+
+  let spread = getSpread(weights);
+  let maxPercent = Math.max(...spread);
+  let minPercent = Math.min(...spread);
+  let iterations = 0;
+
+  while (items.length > 1 && (maxPercent < 18 || minPercent > 4) && iterations < 5) {
+    weights = weights.map((weight, index) => {
+      const rankRatio = ranked.length <= 1 ? 0 : index / (ranked.length - 1);
+      const tailTaper = 1.18 - rankRatio * 0.5;
+      return Math.pow(weight, 1.22) * tailTaper;
+    });
+    spread = getSpread(weights);
+    maxPercent = Math.max(...spread);
+    minPercent = Math.min(...spread);
+    iterations += 1;
+  }
+
+  const finalWeights = Array.from({ length: items.length }, () => 0);
+  ranked.forEach((entry, rankIndex) => {
+    finalWeights[entry.index] = weights[rankIndex];
+  });
+
+  assignPercentagesFromWeights(items, finalWeights, "likelyCatchPercent");
 };
 
 const scoreObservedRecords = (fish) => {
@@ -643,7 +717,7 @@ const buildFishForHabitat = async (habitatQuery) => {
     });
   }
 
-  normalizePercentages(fish, (item) => scoreLikelyCatch(item, habitat), "likelyCatchPercent");
+  normalizeLikelyCatchPercentages(fish, habitat);
   normalizePercentages(fish, scoreObservedRecords, "observedSpeciesRecordPercent");
   normalizePercentages(
     fish,
@@ -655,7 +729,7 @@ const buildFishForHabitat = async (habitatQuery) => {
     habitat,
     notes: {
       likelyCatchPercent:
-        "Normalized proxy based on MarLIN habitat fit plus FishBase depth, habitat text, size, and fishery-use cues across the returned fish set.",
+        "Contrast-amplified normalized proxy based on MarLIN habitat fit plus FishBase depth, habitat text, size, and fishery-use cues across the returned fish set. Values are widened so each habitat has clearer common and legendary catches and still sum to 100%.",
       observedSpeciesRecordPercent:
         "Normalized proxy based on habitat fit weighted by WoRMS distribution record counts, with a small FishBase depth-data bonus when available.",
       fishingActivityAssociatedPercent:

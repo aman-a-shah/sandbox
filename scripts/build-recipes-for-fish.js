@@ -9,122 +9,6 @@ const OUTPUT_DIR = path.resolve(__dirname, "..", "generated", "recipes-by-fish")
 const OUTPUT_PATH = path.join(OUTPUT_DIR, "recipes.json");
 const BULK_REQUEST_DELAY_MS = 1200;
 
-const FALLBACK_RECIPE_TEMPLATES = {
-  delicate: [
-    {
-      title: "Pan-Seared {fish} with Lemon Butter",
-      dishTypes: ["main course", "dinner"],
-      cuisines: ["Mediterranean"],
-      diets: ["pescatarian"],
-      readyInMinutes: 25,
-      servings: 2,
-      ingredients: ["2 {fish} fillets", "1 tbsp olive oil", "2 tbsp butter", "1 lemon", "1 clove garlic", "salt", "black pepper", "parsley"],
-      instructions:
-        "Pat the {fish} dry, season with salt and pepper, and sear in olive oil until cooked through. Add butter, garlic, and lemon juice, then spoon the sauce over the fish and finish with parsley.",
-      nutrition: { calories: 420, protein: 34, fat: 26, carbohydrates: 6, sodium: 420 },
-      basePrice: 16,
-    },
-    {
-      title: "{fish} Nigiri Bowl",
-      dishTypes: ["main course", "lunch"],
-      cuisines: ["Japanese"],
-      diets: ["pescatarian"],
-      readyInMinutes: 35,
-      servings: 2,
-      ingredients: ["2 {fish} fillets", "2 cups cooked sushi rice", "1 tbsp rice vinegar", "1 cucumber", "1 sheet nori", "soy sauce", "pickled ginger"],
-      instructions:
-        "Cook and season the rice, slice the {fish} thinly, and build bowls with rice, cucumber, nori, and ginger. Serve with soy sauce.",
-      nutrition: { calories: 510, protein: 29, fat: 12, carbohydrates: 67, sodium: 640 },
-      basePrice: 14,
-    },
-  ],
-  white: [
-    {
-      title: "Herb-Crusted Baked {fish}",
-      dishTypes: ["main course", "dinner"],
-      cuisines: ["American"],
-      diets: ["pescatarian"],
-      readyInMinutes: 30,
-      servings: 2,
-      ingredients: ["2 {fish} fillets", "1/2 cup breadcrumbs", "1 tbsp Dijon mustard", "1 tbsp olive oil", "1 tbsp parsley", "1 tsp thyme", "salt", "black pepper"],
-      instructions:
-        "Brush the {fish} with mustard, coat with herbed breadcrumbs, and bake until flaky and golden.",
-      nutrition: { calories: 470, protein: 36, fat: 18, carbohydrates: 34, sodium: 510 },
-      basePrice: 15,
-    },
-    {
-      title: "Creamy {fish} Chowder",
-      dishTypes: ["soup", "main course"],
-      cuisines: ["American"],
-      diets: ["pescatarian"],
-      readyInMinutes: 45,
-      servings: 4,
-      ingredients: ["2 {fish} fillets", "2 potatoes", "1 onion", "2 cups milk", "1 cup stock", "1 tbsp butter", "1 celery stalk", "salt", "black pepper"],
-      instructions:
-        "Saute the onion and celery in butter, add potato and stock, then simmer. Stir in milk and chunks of {fish} and cook gently until tender.",
-      nutrition: { calories: 390, protein: 24, fat: 14, carbohydrates: 39, sodium: 560 },
-      basePrice: 13,
-    },
-  ],
-  oily: [
-    {
-      title: "Grilled {fish} Steak with Charred Citrus",
-      dishTypes: ["main course", "dinner"],
-      cuisines: ["Mediterranean"],
-      diets: ["pescatarian"],
-      readyInMinutes: 28,
-      servings: 2,
-      ingredients: ["2 {fish} steaks", "1 orange", "1 lemon", "1 tbsp olive oil", "1 tsp smoked paprika", "salt", "black pepper"],
-      instructions:
-        "Rub the {fish} with oil and paprika, grill until browned, and serve with charred citrus wedges.",
-      nutrition: { calories: 460, protein: 33, fat: 28, carbohydrates: 11, sodium: 390 },
-      basePrice: 18,
-    },
-    {
-      title: "{fish} Rice Bowl with Ginger Scallion Sauce",
-      dishTypes: ["main course", "lunch"],
-      cuisines: ["Asian"],
-      diets: ["pescatarian"],
-      readyInMinutes: 30,
-      servings: 2,
-      ingredients: ["2 {fish} fillets", "2 cups cooked rice", "2 scallions", "1 tsp ginger", "1 tbsp soy sauce", "1 tsp sesame oil", "1 cucumber"],
-      instructions:
-        "Cook the {fish}, whisk a ginger scallion sauce, and serve over rice with sliced cucumber.",
-      nutrition: { calories: 540, protein: 31, fat: 17, carbohydrates: 61, sodium: 670 },
-      basePrice: 15,
-    },
-  ],
-  shellfishLike: [
-    {
-      title: "Crispy {fish} Cakes",
-      dishTypes: ["main course", "appetizer"],
-      cuisines: ["American"],
-      diets: ["pescatarian"],
-      readyInMinutes: 35,
-      servings: 4,
-      ingredients: ["3 portions {fish}", "1 egg", "1/2 cup breadcrumbs", "2 tbsp mayonnaise", "1 tsp mustard", "1 tbsp parsley", "salt", "black pepper"],
-      instructions:
-        "Mix flaked cooked {fish} with the binder ingredients, shape into cakes, and pan-fry until crisp on both sides.",
-      nutrition: { calories: 320, protein: 18, fat: 16, carbohydrates: 24, sodium: 520 },
-      basePrice: 12,
-    },
-  ],
-  generic: [
-    {
-      title: "Roasted {fish} with Garlic and Herbs",
-      dishTypes: ["main course", "dinner"],
-      cuisines: ["European"],
-      diets: ["pescatarian"],
-      readyInMinutes: 32,
-      servings: 2,
-      ingredients: ["2 {fish} fillets", "1 tbsp olive oil", "2 cloves garlic", "1 tbsp mixed herbs", "salt", "black pepper", "1 lemon"],
-      instructions:
-        "Season the {fish}, roast until cooked through, and finish with garlic, herbs, and lemon.",
-      nutrition: { calories: 430, protein: 32, fat: 24, carbohydrates: 8, sodium: 410 },
-      basePrice: 14,
-    },
-  ],
-};
 
 const COMMON_FISH_ALIAS_MAP = {
   "atlantic salmon": ["salmon", "salmon fillet", "salmon filet"],
@@ -161,6 +45,9 @@ const MASS_UNIT_TO_GRAMS = {
   pound: 453.592,
   pounds: 453.592,
 };
+
+const BASELINE_FISH_PRICE = 15.5;
+const BASELINE_CATCH_PERCENT = 13.5;
 
 const loadDotEnv = async () => {
   const envPath = path.resolve(__dirname, "..", ".env");
@@ -387,6 +274,32 @@ const normalizeNutrition = (nutrition) => {
   };
 };
 
+const inferLengthFromSizeCategory = (sizeCategory) => {
+  const normalized = (sizeCategory || "").toLowerCase();
+  if (normalized.includes("small-medium")) {
+    return 7;
+  }
+  if (normalized.includes("medium-large")) {
+    return 30;
+  }
+  if (normalized.includes("large")) {
+    return 60;
+  }
+  if (normalized.includes("medium")) {
+    return 15;
+  }
+  return 15;
+};
+
+const inferFishUnitPrice = (fish) => {
+  const likelyCatchPercent = Math.max(Number(fish.likelyCatchPercent) || BASELINE_CATCH_PERCENT, 0.5);
+  const commonLengthCm = Number(fish.fishBaseCommonLengthCm);
+  const effectiveLengthCm = Number.isFinite(commonLengthCm) && commonLengthCm > 0 ? commonLengthCm : inferLengthFromSizeCategory(fish.sizeCategory);
+  const scarcityFactor = Math.min(2.8, Math.max(0.7, Math.pow(BASELINE_CATCH_PERCENT / likelyCatchPercent, 0.6)));
+  const sizeFactor = Math.min(2.4, Math.max(0.75, 1 + (effectiveLengthCm - 15) / 90));
+  return Number((BASELINE_FISH_PRICE * scarcityFactor * sizeFactor).toFixed(2));
+};
+
 const computeRecipeRarity = (fish, quantityWholeFish) => {
   const catchWeight = Number(fish.likelyCatchPercent) || 1;
   const scarcity = Math.max(1, 100 - catchWeight);
@@ -399,10 +312,12 @@ const computeRecipeRarity = (fish, quantityWholeFish) => {
 };
 
 const computeRecipePrice = (fish, recipe, quantityWholeFish) => {
-  const baseDollars = ((recipe.pricePerServing || 0) / 100) * (recipe.servings || 1);
-  const scarcityMultiplier = 1 + Math.max(0.1, (100 - (fish.likelyCatchPercent || 1)) / 100);
-  const quantityMultiplier = 1 + (quantityWholeFish - 1) * 0.18;
-  return Number((baseDollars * scarcityMultiplier * quantityMultiplier).toFixed(2));
+  const combinedFishCost = inferFishUnitPrice(fish) * Math.max(1, quantityWholeFish);
+  const basePriceFromApi = Number((((recipe.pricePerServing || 0) / 100) * (recipe.servings || 1)).toFixed(2));
+  return {
+    total: Number((combinedFishCost + basePriceFromApi).toFixed(2)),
+    basePriceFromApi,
+  };
 };
 
 const pickFallbackCategory = (fish) => {
@@ -432,8 +347,7 @@ const makeFallbackRecipe = (fish) => {
   const template = templates[seededIndex(fish.scientificName || fish.commonName || "fish", templates.length)];
   const fishLabel = fish.commonName || fish.scientificName || "fish";
   const quantityWholeFish = 2;
-  const scarcity = Math.max(0.1, (100 - (fish.likelyCatchPercent || 1)) / 100);
-  const total = Number((template.basePrice * (1 + scarcity)).toFixed(2));
+  const total = Number((inferFishUnitPrice(fish) * quantityWholeFish + template.basePrice).toFixed(2));
 
   return {
     requiredFishIngredients: [{ name: fishLabel, amount: quantityWholeFish, unit: "fish", original: `${quantityWholeFish} ${fishLabel}` }],
@@ -475,7 +389,10 @@ const makeFallbackRecipe = (fish) => {
   };
 };
 
-const simplifyRecipe = (fish, recipe, targetIngredient, quantityWholeFish) => ({
+const simplifyRecipe = (fish, recipe, targetIngredient, quantityWholeFish) => {
+  const computedPrice = computeRecipePrice(fish, recipe, quantityWholeFish);
+
+  return {
   requiredFishIngredients: (recipe.extendedIngredients || [])
     .filter((ingredient) => matchesTargetFish(ingredient, buildAliases(fish)))
     .map((ingredient) => ({
@@ -502,8 +419,8 @@ const simplifyRecipe = (fish, recipe, targetIngredient, quantityWholeFish) => ({
   rarity: computeRecipeRarity(fish, quantityWholeFish),
   estimatedPrice: {
     currency: "USD",
-    total: computeRecipePrice(fish, recipe, quantityWholeFish),
-    basePriceFromApi: Number((((recipe.pricePerServing || 0) / 100) * (recipe.servings || 1)).toFixed(2)),
+    total: computedPrice.total,
+    basePriceFromApi: computedPrice.basePriceFromApi,
   },
   nutrition: normalizeNutrition(recipe.nutrition),
   recipe: {
@@ -520,7 +437,8 @@ const simplifyRecipe = (fish, recipe, targetIngredient, quantityWholeFish) => ({
       isRequiredFishIngredient: matchesTargetFish(ingredient, buildAliases(fish)),
     })),
   },
-});
+};
+};
 
 const isValidRecipeForFish = (recipe, aliases) => {
   const ingredients = Array.isArray(recipe.extendedIngredients) ? recipe.extendedIngredients : [];
@@ -571,12 +489,13 @@ const buildFishEntry = (fish, recipes, quotaStrategy) => ({
     observedSpeciesRecordPercent: fish.observedSpeciesRecordPercent,
     fishingActivityAssociatedPercent: fish.fishingActivityAssociatedPercent,
     sizeCategory: fish.sizeCategory || null,
+    fishBaseCommonLengthCm: fish.fishBaseCommonLengthCm || null,
     averageDepthMeters: fish.averageDepthMeters || null,
   },
   notes: {
     quotaStrategy,
     filtering: "Recipes are kept when the target fish appears in the ingredient list, even if other seafood ingredients are also present.",
-    pricing: "Estimated price starts from Spoonacular pricePerServing and is scaled by fish scarcity and fish quantity.",
+    pricing: "Estimated price is the combined value of the fish used plus Spoonacular basePriceFromApi.",
     quantityInference: "Whole-fish quantity uses explicit units when available, otherwise mass is inferred from ingredient amount and fish length.",
     fallback: "If Spoonacular returns no recipes, a generated fallback fish recipe is used instead.",
   },
@@ -710,3 +629,121 @@ main().catch((error) => {
   console.error(error.message || error);
   process.exit(1);
 });
+
+
+const FALLBACK_RECIPE_TEMPLATES = {
+  delicate: [
+    {
+      title: "Pan-Seared {fish} with Lemon Butter",
+      dishTypes: ["main course", "dinner"],
+      cuisines: ["Mediterranean"],
+      diets: ["pescatarian"],
+      readyInMinutes: 25,
+      servings: 2,
+      ingredients: ["2 {fish} fillets", "1 tbsp olive oil", "2 tbsp butter", "1 lemon", "1 clove garlic", "salt", "black pepper", "parsley"],
+      instructions:
+        "Pat the {fish} dry, season with salt and pepper, and sear in olive oil until cooked through. Add butter, garlic, and lemon juice, then spoon the sauce over the fish and finish with parsley.",
+      nutrition: { calories: 420, protein: 34, fat: 26, carbohydrates: 6, sodium: 420 },
+      basePrice: 16,
+    },
+    {
+      title: "{fish} Nigiri Bowl",
+      dishTypes: ["main course", "lunch"],
+      cuisines: ["Japanese"],
+      diets: ["pescatarian"],
+      readyInMinutes: 35,
+      servings: 2,
+      ingredients: ["2 {fish} fillets", "2 cups cooked sushi rice", "1 tbsp rice vinegar", "1 cucumber", "1 sheet nori", "soy sauce", "pickled ginger"],
+      instructions:
+        "Cook and season the rice, slice the {fish} thinly, and build bowls with rice, cucumber, nori, and ginger. Serve with soy sauce.",
+      nutrition: { calories: 510, protein: 29, fat: 12, carbohydrates: 67, sodium: 640 },
+      basePrice: 14,
+    },
+  ],
+  white: [
+    {
+      title: "Herb-Crusted Baked {fish}",
+      dishTypes: ["main course", "dinner"],
+      cuisines: ["American"],
+      diets: ["pescatarian"],
+      readyInMinutes: 30,
+      servings: 2,
+      ingredients: ["2 {fish} fillets", "1/2 cup breadcrumbs", "1 tbsp Dijon mustard", "1 tbsp olive oil", "1 tbsp parsley", "1 tsp thyme", "salt", "black pepper"],
+      instructions:
+        "Brush the {fish} with mustard, coat with herbed breadcrumbs, and bake until flaky and golden.",
+      nutrition: { calories: 470, protein: 36, fat: 18, carbohydrates: 34, sodium: 510 },
+      basePrice: 15,
+    },
+    {
+      title: "Creamy {fish} Chowder",
+      dishTypes: ["soup", "main course"],
+      cuisines: ["American"],
+      diets: ["pescatarian"],
+      readyInMinutes: 45,
+      servings: 4,
+      ingredients: ["2 {fish} fillets", "2 potatoes", "1 onion", "2 cups milk", "1 cup stock", "1 tbsp butter", "1 celery stalk", "salt", "black pepper"],
+      instructions:
+        "Saute the onion and celery in butter, add potato and stock, then simmer. Stir in milk and chunks of {fish} and cook gently until tender.",
+      nutrition: { calories: 390, protein: 24, fat: 14, carbohydrates: 39, sodium: 560 },
+      basePrice: 13,
+    },
+  ],
+  oily: [
+    {
+      title: "Grilled {fish} Steak with Charred Citrus",
+      dishTypes: ["main course", "dinner"],
+      cuisines: ["Mediterranean"],
+      diets: ["pescatarian"],
+      readyInMinutes: 28,
+      servings: 2,
+      ingredients: ["2 {fish} steaks", "1 orange", "1 lemon", "1 tbsp olive oil", "1 tsp smoked paprika", "salt", "black pepper"],
+      instructions:
+        "Rub the {fish} with oil and paprika, grill until browned, and serve with charred citrus wedges.",
+      nutrition: { calories: 460, protein: 33, fat: 28, carbohydrates: 11, sodium: 390 },
+      basePrice: 18,
+    },
+    {
+      title: "{fish} Rice Bowl with Ginger Scallion Sauce",
+      dishTypes: ["main course", "lunch"],
+      cuisines: ["Asian"],
+      diets: ["pescatarian"],
+      readyInMinutes: 30,
+      servings: 2,
+      ingredients: ["2 {fish} fillets", "2 cups cooked rice", "2 scallions", "1 tsp ginger", "1 tbsp soy sauce", "1 tsp sesame oil", "1 cucumber"],
+      instructions:
+        "Cook the {fish}, whisk a ginger scallion sauce, and serve over rice with sliced cucumber.",
+      nutrition: { calories: 540, protein: 31, fat: 17, carbohydrates: 61, sodium: 670 },
+      basePrice: 15,
+    },
+  ],
+  shellfishLike: [
+    {
+      title: "Crispy {fish} Cakes",
+      dishTypes: ["main course", "appetizer"],
+      cuisines: ["American"],
+      diets: ["pescatarian"],
+      readyInMinutes: 35,
+      servings: 4,
+      ingredients: ["3 portions {fish}", "1 egg", "1/2 cup breadcrumbs", "2 tbsp mayonnaise", "1 tsp mustard", "1 tbsp parsley", "salt", "black pepper"],
+      instructions:
+        "Mix flaked cooked {fish} with the binder ingredients, shape into cakes, and pan-fry until crisp on both sides.",
+      nutrition: { calories: 320, protein: 18, fat: 16, carbohydrates: 24, sodium: 520 },
+      basePrice: 12,
+    },
+  ],
+  generic: [
+    {
+      title: "Roasted {fish} with Garlic and Herbs",
+      dishTypes: ["main course", "dinner"],
+      cuisines: ["European"],
+      diets: ["pescatarian"],
+      readyInMinutes: 32,
+      servings: 2,
+      ingredients: ["2 {fish} fillets", "1 tbsp olive oil", "2 cloves garlic", "1 tbsp mixed herbs", "salt", "black pepper", "1 lemon"],
+      instructions:
+        "Season the {fish}, roast until cooked through, and finish with garlic, herbs, and lemon.",
+      nutrition: { calories: 430, protein: 32, fat: 24, carbohydrates: 8, sodium: 410 },
+      basePrice: 14,
+    },
+  ],
+};
