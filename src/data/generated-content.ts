@@ -27,11 +27,29 @@ interface HabitatFishRecord {
 
 interface HabitatDataFile {
   habitat: {
+    habitatId?: string | number | null;
     habitatInformationName: string;
     inferredDepthZone: string | null;
     inferredSubstratum: string[] | null;
   };
   fish: HabitatFishRecord[];
+}
+
+interface HabitatCatchProfile {
+  definition: OceanHabitatDefinition;
+  fishCatalog: InventoryFishDefinition[];
+  weightedCatchPool: Array<{
+    fish: InventoryFishDefinition;
+    weight: number;
+  }>;
+}
+
+export interface OceanHabitatDefinition {
+  id: string;
+  name: string;
+  jsonPath: string;
+  depthZone: string | null;
+  substratum: string[];
 }
 
 export interface MasterRecipeFile {
@@ -104,10 +122,15 @@ interface RecipeRecord {
   };
 }
 
-const fallbackHabitat = fallbackHabitatData as HabitatDataFile;
 const EMPTY_MASTER_RECIPES: MasterRecipeFile = {
   fishRecipes: [],
 };
+
+const LEGACY_FALLBACK_JSON_PATH = "generated/fish-by-habitat/coralline-crusts-in-surge-gullies-and-scoured-infralittoral-rock.json";
+
+const habitatDataModules = import.meta.glob("../../generated/fish-by-habitat/*.json", {
+  eager: true,
+}) as Record<string, { default: HabitatDataFile }>;
 
 function slugify(value: string): string {
   return value
@@ -153,12 +176,36 @@ function normalizeFishName(value: string | null | undefined): string {
   return (value ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
-function mapHabitatFishToInventoryFish(record: HabitatFishRecord): InventoryFishDefinition {
+function normalizeHabitatId(rawId: string | number | null | undefined, habitatName: string): string {
+  const normalized = rawId === null || rawId === undefined ? "" : String(rawId).trim();
+  if (normalized) {
+    return normalized;
+  }
+
+  return slugify(habitatName);
+}
+
+function toPublicJsonPath(modulePath: string): string {
+  const unixPath = modulePath.replace(/\\/g, "/");
+  const marker = "/generated/";
+  const markerIndex = unixPath.lastIndexOf(marker);
+  if (markerIndex >= 0) {
+    return unixPath.slice(markerIndex + 1);
+  }
+
+  return unixPath.replace(/^(\.\.\/)+/, "");
+}
+
+function mapHabitatFishToInventoryFish(
+  record: HabitatFishRecord,
+  habitat: HabitatDataFile["habitat"],
+): InventoryFishDefinition {
+  const habitatName = habitat.habitatInformationName;
   return {
     id: slugify(record.commonName),
     name: record.commonName,
     scientificName: record.scientificName,
-    region: fallbackHabitat.habitat.habitatInformationName,
+    region: habitatName,
     rarity: inferRarity(record.likelyCatchPercent),
     value: inferValue(record.likelyCatchPercent, record.averageDepthMeters),
     placeholderVisual: createVisualToken(record.commonName),
@@ -179,18 +226,88 @@ function mapHabitatFishToInventoryFish(record: HabitatFishRecord): InventoryFish
     likelyCatchPercent: record.likelyCatchPercent,
     observedSpeciesRecordPercent: record.observedSpeciesRecordPercent,
     fishingActivityAssociatedPercent: record.fishingActivityAssociatedPercent,
-    habitatName: fallbackHabitat.habitat.habitatInformationName,
-    habitatDepthZone: fallbackHabitat.habitat.inferredDepthZone,
-    habitatSubstratum: fallbackHabitat.habitat.inferredSubstratum ?? [],
+    habitatName,
+    habitatDepthZone: habitat.inferredDepthZone,
+    habitatSubstratum: habitat.inferredSubstratum ?? [],
   };
 }
 
-const fallbackHabitatFishCatalog = fallbackHabitat.fish.map(mapHabitatFishToInventoryFish);
+function buildHabitatCatchProfile(modulePath: string, habitatData: HabitatDataFile): HabitatCatchProfile {
+  const definition: OceanHabitatDefinition = {
+    id: normalizeHabitatId(habitatData.habitat.habitatId, habitatData.habitat.habitatInformationName),
+    name: habitatData.habitat.habitatInformationName,
+    jsonPath: toPublicJsonPath(modulePath),
+    depthZone: habitatData.habitat.inferredDepthZone,
+    substratum: [...(habitatData.habitat.inferredSubstratum ?? [])],
+  };
 
-const weightedCatchPool = fallbackHabitatFishCatalog.map((fish) => ({
-  fish,
-  weight: Math.max(fish.likelyCatchPercent, 0.1),
-}));
+  const fishCatalog = habitatData.fish.map((fish) => mapHabitatFishToInventoryFish(fish, habitatData.habitat));
+  const weightedCatchPool = fishCatalog.map((fish) => ({
+    fish,
+    weight: Math.max(fish.likelyCatchPercent, 0.1),
+  }));
+
+  return {
+    definition,
+    fishCatalog,
+    weightedCatchPool,
+  };
+}
+
+function collectHabitatCatchProfiles(): HabitatCatchProfile[] {
+  const profiles = Object.entries(habitatDataModules)
+    .map(([modulePath, module]) => buildHabitatCatchProfile(modulePath, module.default))
+    .filter((profile) => profile.fishCatalog.length > 0);
+
+  if (profiles.length > 0) {
+    return profiles;
+  }
+
+  return [buildHabitatCatchProfile(LEGACY_FALLBACK_JSON_PATH, fallbackHabitatData as HabitatDataFile)];
+}
+
+const unsortedHabitatProfiles = collectHabitatCatchProfiles();
+const uniqueHabitatProfilesById = new Map<string, HabitatCatchProfile>();
+for (const profile of unsortedHabitatProfiles) {
+  if (!uniqueHabitatProfilesById.has(profile.definition.id)) {
+    uniqueHabitatProfilesById.set(profile.definition.id, profile);
+  }
+}
+
+const habitatProfiles = [...uniqueHabitatProfilesById.values()].sort((left, right) =>
+  left.definition.name.localeCompare(right.definition.name),
+);
+
+const defaultHabitatProfile =
+  habitatProfiles.find((profile) => profile.definition.jsonPath === LEGACY_FALLBACK_JSON_PATH) ?? habitatProfiles[0];
+
+const habitatProfilesById = new Map(habitatProfiles.map((profile) => [profile.definition.id, profile]));
+
+function resolveHabitatProfile(habitatId: string | null | undefined): HabitatCatchProfile {
+  const normalizedHabitatId = habitatId?.trim();
+  if (normalizedHabitatId) {
+    const profile = habitatProfilesById.get(normalizedHabitatId);
+    if (profile) {
+      return profile;
+    }
+  }
+
+  return defaultHabitatProfile;
+}
+
+function rollRandomCatchFromPool(profile: HabitatCatchProfile): InventoryFishDefinition {
+  const totalWeight = profile.weightedCatchPool.reduce((sum, entry) => sum + entry.weight, 0);
+  let target = Math.random() * totalWeight;
+
+  for (const entry of profile.weightedCatchPool) {
+    target -= entry.weight;
+    if (target <= 0) {
+      return { ...entry.fish };
+    }
+  }
+
+  return { ...profile.weightedCatchPool[profile.weightedCatchPool.length - 1].fish };
+}
 
 function sumRequiredFishQuantity(recipe: RecipeRecord): number {
   const explicitQuantity = recipe.fishUsed.quantityWholeFish;
@@ -227,16 +344,39 @@ function mapRecipeRecordToRecipeBookRecipe(entry: MasterRecipeFishEntry, recipe:
   };
 }
 
+export function getOceanHabitats(): OceanHabitatDefinition[] {
+  return habitatProfiles.map((profile) => ({
+    ...profile.definition,
+    substratum: [...profile.definition.substratum],
+  }));
+}
+
+export function getDefaultHabitatId(): string {
+  return defaultHabitatProfile.definition.id;
+}
+
+export function getHabitatNameById(habitatId: string | null | undefined): string {
+  return resolveHabitatProfile(habitatId).definition.name;
+}
+
+export function getHabitatJsonPathById(habitatId: string | null | undefined): string {
+  return resolveHabitatProfile(habitatId).definition.jsonPath;
+}
+
+export function rollRandomCatchForHabitat(habitatId: string | null | undefined): InventoryFishDefinition {
+  return rollRandomCatchFromPool(resolveHabitatProfile(habitatId));
+}
+
 export function getFallbackHabitatFishCatalog(): InventoryFishDefinition[] {
-  return fallbackHabitatFishCatalog.map((fish) => ({ ...fish }));
+  return resolveHabitatProfile(null).fishCatalog.map((fish) => ({ ...fish }));
 }
 
 export function getFallbackHabitatName(): string {
-  return fallbackHabitat.habitat.habitatInformationName;
+  return getHabitatNameById(null);
 }
 
 export function getFallbackHabitatJsonPath(): string {
-  return "generated/fish-by-habitat/coralline-crusts-in-surge-gullies-and-scoured-infralittoral-rock.json";
+  return getHabitatJsonPathById(null);
 }
 
 export function getDefaultMasterRecipes(): MasterRecipeFile {
@@ -244,17 +384,7 @@ export function getDefaultMasterRecipes(): MasterRecipeFile {
 }
 
 export function rollRandomCatchFromFallbackHabitat(): InventoryFishDefinition {
-  const totalWeight = weightedCatchPool.reduce((sum, entry) => sum + entry.weight, 0);
-  let target = Math.random() * totalWeight;
-
-  for (const entry of weightedCatchPool) {
-    target -= entry.weight;
-    if (target <= 0) {
-      return { ...entry.fish };
-    }
-  }
-
-  return { ...weightedCatchPool[weightedCatchPool.length - 1].fish };
+  return rollRandomCatchForHabitat(null);
 }
 
 export function getCraftableRecipesForInventory(
