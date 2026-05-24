@@ -440,12 +440,14 @@ For example, use WoRMS for taxonomy, OBIS/GBIF for occurrences, Marine Regions f
 
 ## Quick Comparison
 
-| Resource | Auth | Main Input | Main Output | Best Use |
-| --- | --- | --- | --- | --- |
-| WoRMS REST | None | Scientific name, AphiaID | Taxonomy JSON/XML | Taxon lookup and validation |
-| MarLIN / MBA | None | Species/habitat IDs, AphiaID, NBN key, names, pressure filters | Species, habitats, MarESA sensitivity records, bibliographies | UK/British Isles species and habitat sensitivity |
-| Global Fishing Watch | Bearer token | Vessel IDs, datasets, date ranges, regions, filters | Vessel identity, events, fishing effort, reports | Vessel/fishing activity and monitoring |
-| Marine Data Science | None | None directly | Directory of links | Finding marine data sources |
+
+| Resource             | Auth         | Main Input                                                     | Main Output                                                   | Best Use                                         |
+| -------------------- | ------------ | -------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------ |
+| WoRMS REST           | None         | Scientific name, AphiaID                                       | Taxonomy JSON/XML                                             | Taxon lookup and validation                      |
+| MarLIN / MBA         | None         | Species/habitat IDs, AphiaID, NBN key, names, pressure filters | Species, habitats, MarESA sensitivity records, bibliographies | UK/British Isles species and habitat sensitivity |
+| Global Fishing Watch | Bearer token | Vessel IDs, datasets, date ranges, regions, filters            | Vessel identity, events, fishing effort, reports              | Vessel/fishing activity and monitoring           |
+| Marine Data Science  | None         | None directly                                                  | Directory of links                                            | Finding marine data sources                      |
+
 
 ## Suggested Integration Pattern
 
@@ -453,3 +455,4 @@ For example, use WoRMS for taxonomy, OBIS/GBIF for occurrences, Marine Regions f
 2. Use MarLIN to enrich species/habitats with sensitivity and evidence data where relevant.
 3. Use Global Fishing Watch for human activity layers, vessel search, fishing effort, and events.
 4. Use Marine Data Science as a source-discovery page for additional datasets such as OBIS, GBIF, Marine Regions, ICES, PANGAEA, and FishBase.
+

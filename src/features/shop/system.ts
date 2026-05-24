@@ -1,0 +1,127 @@
+import { escapeHtml } from "../../core/utils";
+import { BASE_CONSTANTS } from "../base";
+import type { BaseState } from "../base";
+import { MOCK_RECIPES } from "./config";
+import { RECIPES_PER_COLUMN, RECIPE_COLUMNS_PER_SPREAD, RECIPES_PER_SPREAD, WORKSTATION_INTERACT_TILE_DISTANCE } from "./constants";
+import type { RecipeBookState, RecipeStub, ShopDomRefs, Workstation } from "./types";
+
+export function drawWorkstation(
+  renderCtx: CanvasRenderingContext2D,
+  currentSceneId: BaseState["currentSceneId"],
+  workstation: Workstation,
+  camera: BaseState["camera"],
+): void {
+  if (currentSceneId !== workstation.sceneId) {
+    return;
+  }
+
+  const screenX = workstation.tileX * BASE_CONSTANTS.TILE_SIZE - camera.x;
+  const screenY = workstation.tileY * BASE_CONSTANTS.TILE_SIZE - camera.y;
+  renderCtx.fillStyle = "#f0ece3";
+  renderCtx.fillRect(screenX, screenY, BASE_CONSTANTS.TILE_SIZE, BASE_CONSTANTS.TILE_SIZE);
+  renderCtx.strokeStyle = "rgba(60, 46, 33, 0.7)";
+  renderCtx.strokeRect(screenX, screenY, BASE_CONSTANTS.TILE_SIZE, BASE_CONSTANTS.TILE_SIZE);
+}
+
+export function isPlayerNearWorkstation(baseState: BaseState, workstation: Workstation): boolean {
+  if (baseState.currentSceneId !== workstation.sceneId) {
+    return false;
+  }
+
+  const playerTileX = Math.floor(baseState.player.x / BASE_CONSTANTS.TILE_SIZE);
+  const playerTileY = Math.floor(baseState.player.y / BASE_CONSTANTS.TILE_SIZE);
+  const tileDistance = Math.abs(playerTileX - workstation.tileX) + Math.abs(playerTileY - workstation.tileY);
+  return tileDistance <= WORKSTATION_INTERACT_TILE_DISTANCE;
+}
+
+export function updateWorkstationPrompt(
+  workstationPromptEl: HTMLElement,
+  recipeBookState: RecipeBookState,
+  inventoryIsOpen: boolean,
+  playerNearWorkstation: boolean,
+): void {
+  const shouldShow = !recipeBookState.isOpen && !inventoryIsOpen && playerNearWorkstation;
+  workstationPromptEl.classList.toggle("is-hidden", !shouldShow);
+}
+
+export function openRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): void {
+  if (state.isOpen) {
+    return;
+  }
+
+  state.isOpen = true;
+  domRefs.recipeBookOverlayEl.classList.remove("is-hidden");
+  domRefs.recipeBookOverlayEl.setAttribute("aria-hidden", "false");
+}
+
+export function closeRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): void {
+  if (!state.isOpen) {
+    return;
+  }
+
+  state.isOpen = false;
+  domRefs.recipeBookOverlayEl.classList.add("is-hidden");
+  domRefs.recipeBookOverlayEl.setAttribute("aria-hidden", "true");
+}
+
+export function getRecipeBookPageCount(): number {
+  return Math.max(1, Math.ceil(MOCK_RECIPES.length / RECIPES_PER_SPREAD));
+}
+
+function getRecipesForPage(pageIndex: number): RecipeStub[] {
+  const clampedPage = Math.min(Math.max(pageIndex, 0), getRecipeBookPageCount() - 1);
+  const startIndex = clampedPage * RECIPES_PER_SPREAD;
+  return MOCK_RECIPES.slice(startIndex, startIndex + RECIPES_PER_SPREAD);
+}
+
+export function renderRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): void {
+  const pageCount = getRecipeBookPageCount();
+  state.currentPage = Math.min(Math.max(state.currentPage, 0), pageCount - 1);
+  const pageRecipes = getRecipesForPage(state.currentPage);
+  const selectedRecipe =
+    state.selectedRecipeId === null ? null : MOCK_RECIPES.find((recipe) => recipe.id === state.selectedRecipeId) ?? null;
+
+  domRefs.recipeBookGridEl.innerHTML = "";
+
+  for (let columnIndex = 0; columnIndex < RECIPE_COLUMNS_PER_SPREAD; columnIndex += 1) {
+    const columnEl = document.createElement("div");
+    columnEl.className = "recipe-column";
+    const columnStart = columnIndex * RECIPES_PER_COLUMN;
+    const columnRecipes = pageRecipes.slice(columnStart, columnStart + RECIPES_PER_COLUMN);
+
+    for (const recipe of columnRecipes) {
+      const cardButtonEl = document.createElement("button");
+      cardButtonEl.type = "button";
+      cardButtonEl.className = "recipe-card";
+      if (state.selectedRecipeId === recipe.id) {
+        cardButtonEl.classList.add("is-selected");
+      }
+
+      cardButtonEl.innerHTML = [
+        `<h3 class=\"recipe-card-title\">${escapeHtml(recipe.name)}</h3>`,
+        `<p class=\"recipe-card-subtitle\">${escapeHtml(recipe.subtitle)}</p>`,
+        `<p class=\"recipe-card-time\">${recipe.cookTimeMinutes} min</p>`,
+      ].join("");
+
+      cardButtonEl.addEventListener("click", () => {
+        state.selectedRecipeId = recipe.id;
+        domRefs.recipeBookSelectionStatusEl.textContent = `Selected recipe: ${recipe.name}`;
+        renderRecipeBook(state, domRefs);
+      });
+
+      columnEl.append(cardButtonEl);
+    }
+
+    domRefs.recipeBookGridEl.append(columnEl);
+  }
+
+  domRefs.recipeBookPageIndicatorEl.textContent = `Page ${state.currentPage + 1} / ${pageCount}`;
+  domRefs.recipeBookPrevButtonEl.disabled = state.currentPage <= 0;
+  domRefs.recipeBookNextButtonEl.disabled = state.currentPage >= pageCount - 1;
+
+  if (selectedRecipe) {
+    domRefs.recipeBookSelectionStatusEl.textContent = `Selected recipe: ${selectedRecipe.name}`;
+  } else {
+    domRefs.recipeBookSelectionStatusEl.textContent = "Select a recipe from this spread.";
+  }
+}
