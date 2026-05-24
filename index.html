@@ -104,25 +104,32 @@
             </button>
           </header>
 
-          <div class="recipe-book-content">
-            <section class="recipe-book-list-panel" aria-label="Recipe list">
-              <div id="recipe-book-grid" class="recipe-book-grid" aria-live="polite"></div>
+          <div class="recipe-book-stage">
+            <button id="recipe-book-prev" class="recipe-book-page-button recipe-book-page-button--prev" type="button" aria-label="Previous recipe page">
+              ‹
+            </button>
+            <div class="recipe-book-spread">
+              <img class="recipe-book-image" src="./sprites/book_full.png" alt="" aria-hidden="true" />
+              <div class="recipe-book-content">
+                <section class="recipe-book-list-panel" aria-label="Recipe list">
+                  <div id="recipe-book-grid" class="recipe-book-grid" aria-live="polite"></div>
+                  <footer class="recipe-book-controls">
+                    <p id="recipe-book-page-indicator" class="recipe-book-page-indicator">Page 1 / 1</p>
+                  </footer>
+                </section>
 
-              <footer class="recipe-book-controls">
-                <button id="recipe-book-prev" type="button">Prev Page</button>
-                <p id="recipe-book-page-indicator" class="recipe-book-page-indicator">Page 1 / 1</p>
-                <button id="recipe-book-next" type="button">Next Page</button>
-              </footer>
-            </section>
-
-            <aside class="recipe-book-details-panel" aria-live="polite">
-              <div id="recipe-book-details" class="recipe-book-details"></div>
-            </aside>
+                <aside class="recipe-book-details-panel" aria-live="polite">
+                  <div id="recipe-book-details" class="recipe-book-details"></div>
+                  <footer class="recipe-book-action-bar">
+                    <button id="recipe-book-cook" class="recipe-book-cook" type="button">Cook</button>
+                  </footer>
+                </aside>
+              </div>
+            </div>
+            <button id="recipe-book-next" class="recipe-book-page-button recipe-book-page-button--next" type="button" aria-label="Next recipe page">
+              ›
+            </button>
           </div>
-
-          <footer class="recipe-book-action-bar">
-            <button id="recipe-book-cook" class="recipe-book-cook" type="button">Cook</button>
-          </footer>
         </div>
       </section>
 

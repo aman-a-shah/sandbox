@@ -32,7 +32,7 @@ import {
   updateCamera,
   updatePlayerAnimation,
 } from "./features/base";
-import type { BaseState, SceneId } from "./features/base";
+import type { BaseState, PlayerDirection, SceneId } from "./features/base";
 import { createFishingState, drawFishingHud, drawFishingWorldLayer, handleFishingClick, isFishingInputLocked, resetFishingState, updateFishing } from "./features/fishing";
 import {
   INVENTORY_CAPACITY,
@@ -141,6 +141,30 @@ const CUSTOMER_PATIENCE_SECONDS = 30;
 const CUSTOMER_EMPTY_PENALTY = 50;
 const CUSTOMER_SPEED = 52;
 const CUSTOMER_PURCHASE_DELAY = 1.6;
+const CUSTOMER_FRAME_SIZE = 32;
+const CUSTOMER_DRAW_SCALE = 1.4;
+const CUSTOMER_IDLE_FRAMES = 4;
+const CUSTOMER_WALK_FRAMES = 6;
+const CUSTOMER_WALK_FRAME_SECONDS = 0.11;
+const CUSTOMER_STOP_DISTANCE = 30;
+const CUSTOMER_STOP_VARIATION = 10;
+const CUSTOMER_LANE_VARIATION = 12;
+const CUSTOMER_PLAYER_IDLE_URLS: Record<PlayerDirection, string> = {
+  down: "/sprites-clean/player/idle-down.png",
+  left: "/sprites-clean/player/idle-left.png",
+  right: "/sprites-clean/player/idle-right.png",
+  up: "/sprites-clean/player/idle-up.png",
+};
+const CUSTOMER_PLAYER_WALK_URLS: Record<PlayerDirection, string> = {
+  down: "/sprites-clean/player/walk-down.png",
+  left: "/sprites-clean/player/walk-left.png",
+  right: "/sprites-clean/player/walk-right.png",
+  up: "/sprites-clean/player/walk-up.png",
+};
+const customerIdleImages = loadCustomerDirectionImages(CUSTOMER_PLAYER_IDLE_URLS);
+const customerWalkImages = loadCustomerDirectionImages(CUSTOMER_PLAYER_WALK_URLS);
+const CUSTOMER_CLOTHING_COLORS = ["#b5644c", "#4d8bc7", "#5f9f64", "#b88444", "#8a6bc1", "#c06c8b", "#5d8f9f"];
+const tintedCustomerSpriteCache = new Map<string, HTMLCanvasElement>();
 
 const OCEAN_REGION_DEBUG_COLORS = [
   "#4cb26f",
@@ -318,6 +342,7 @@ const appState: AppState = {
 
 let currentMasterRecipes = getDefaultMasterRecipes();
 const pendingRecipeGenerations = new Set<string>();
+let nextCustomerSpriteIndex = 0;
 attachDebugConsoleControls();
 
 document.documentElement.style.setProperty("--global-scale", String(BASE_CONSTANTS.GLOBAL_SCALE));
@@ -1428,16 +1453,18 @@ function updateCustomers(dt: number): void {
   }
 
   if (customer.state === "arriving") {
-    moveCustomerTowards(getCustomerSellTarget(), dt);
+    moveCustomerAlongCustomerPath(dt);
     if (isCustomerAtTarget(getCustomerSellTarget())) {
       customer.state = "waiting";
       customer.patienceRemaining = CUSTOMER_PATIENCE_SECONDS;
       customer.purchaseTimer = CUSTOMER_PURCHASE_DELAY;
+      stopCustomerWalking("left");
     }
     return;
   }
 
   if (customer.state === "waiting") {
+    stopCustomerWalking("left");
     if (getSaleTableItems().length > 0) {
       customer.state = "buying";
       customer.purchaseTimer = CUSTOMER_PURCHASE_DELAY;
@@ -1453,6 +1480,7 @@ function updateCustomers(dt: number): void {
   }
 
   if (customer.state === "buying") {
+    stopCustomerWalking("left");
     if (getSaleTableItems().length === 0) {
       customer.state = "waiting";
       return;
@@ -1474,6 +1502,8 @@ function updateCustomers(dt: number): void {
 
 function spawnCustomer(): void {
   const entry = getCustomerEntryTarget();
+  const spriteIndex = nextCustomerSpriteIndex % CUSTOMER_CLOTHING_COLORS.length;
+  nextCustomerSpriteIndex += 1;
   appState.shop.customer = {
     isActive: true,
     x: entry.x,
@@ -1481,6 +1511,13 @@ function spawnCustomer(): void {
     state: "arriving",
     patienceRemaining: CUSTOMER_PATIENCE_SECONDS,
     purchaseTimer: CUSTOMER_PURCHASE_DELAY,
+    spriteIndex,
+    facing: "up",
+    isMoving: true,
+    animationTime: 0,
+    pathPhase: "vertical",
+    stopOffsetX: Math.round((Math.random() * 2 - 1) * CUSTOMER_STOP_VARIATION),
+    stopOffsetY: Math.round((Math.random() * 2 - 1) * CUSTOMER_LANE_VARIATION),
   };
 }
 
@@ -1489,6 +1526,9 @@ function resetCustomer(): void {
   appState.shop.customer.state = "arriving";
   appState.shop.customer.patienceRemaining = CUSTOMER_PATIENCE_SECONDS;
   appState.shop.customer.purchaseTimer = 0;
+  appState.shop.customer.isMoving = false;
+  appState.shop.customer.animationTime = 0;
+  appState.shop.customer.pathPhase = "vertical";
 }
 
 function getCustomerSpawnInterval(): number {
@@ -1497,9 +1537,8 @@ function getCustomerSpawnInterval(): number {
 
 function getCustomerEntryTarget(): CustomerTarget {
   const tile = BASE_CONSTANTS.TILE_SIZE;
-  const laneX = appState.shop.saleTable.tileX * tile + tile / 2;
   return {
-    x: laneX,
+    x: appState.base.scenes.shop.worldCols * tile * 0.5,
     y: 26 * tile + tile / 2,
   };
 }
@@ -1509,30 +1548,75 @@ function getCustomerExitTarget(): CustomerTarget {
 }
 
 function getCustomerSellTarget(): CustomerTarget {
+  const customer = appState.shop.customer;
   const tile = BASE_CONSTANTS.TILE_SIZE;
   return {
-    x: appState.shop.saleTable.tileX * tile + tile / 2,
-    y: appState.shop.saleTable.tileY * tile + tile * 0.65,
+    x: appState.shop.saleTable.tileX * tile + tile / 2 + CUSTOMER_STOP_DISTANCE + customer.stopOffsetX,
+    y: appState.shop.saleTable.tileY * tile + tile * 0.65 + customer.stopOffsetY,
   };
+}
+
+function getCustomerTurnTarget(): CustomerTarget {
+  const entry = getCustomerEntryTarget();
+  return {
+    x: entry.x,
+    y: getCustomerSellTarget().y,
+  };
+}
+
+function moveCustomerAlongCustomerPath(dt: number): void {
+  const customer = appState.shop.customer;
+  if (customer.pathPhase === "vertical") {
+    const turnTarget = getCustomerTurnTarget();
+    moveCustomerTowards(turnTarget, dt);
+    if (isCustomerAtTarget(turnTarget)) {
+      customer.pathPhase = "horizontal";
+    }
+    return;
+  }
+
+  moveCustomerTowards(getCustomerSellTarget(), dt);
 }
 
 function moveCustomerTowards(target: CustomerTarget, dt: number): void {
   const customer = appState.shop.customer;
-  customer.x = target.x;
+  const dx = target.x - customer.x;
   const dy = target.y - customer.y;
-  const distance = Math.abs(dy);
+  const distance = Math.hypot(dx, dy);
   if (distance <= 0.001) {
+    customer.x = target.x;
     customer.y = target.y;
+    customer.isMoving = false;
+    customer.animationTime = 0;
     return;
   }
 
   const step = Math.min(distance, CUSTOMER_SPEED * dt);
-  customer.y += Math.sign(dy) * step;
+  customer.x += (dx / distance) * step;
+  customer.y += (dy / distance) * step;
+  customer.facing = getCustomerFacing(dx, dy);
+  customer.isMoving = true;
+  customer.animationTime += dt;
 }
 
 function isCustomerAtTarget(target: CustomerTarget): boolean {
   const customer = appState.shop.customer;
-  return Math.abs(target.y - customer.y) < 4;
+  return Math.hypot(target.x - customer.x, target.y - customer.y) < 4;
+}
+
+function getCustomerFacing(dx: number, dy: number): PlayerDirection {
+  if (Math.abs(dx) > Math.abs(dy)) {
+    return dx > 0 ? "right" : "left";
+  }
+
+  return dy > 0 ? "down" : "up";
+}
+
+function stopCustomerWalking(facing: PlayerDirection): void {
+  const customer = appState.shop.customer;
+  customer.facing = facing;
+  customer.isMoving = false;
+  customer.animationTime = 0;
 }
 
 function completeCustomerPurchase(): void {
@@ -1562,21 +1646,13 @@ function drawCustomer(targetCtx: CanvasRenderingContext2D): void {
   }
 
   const screenPoint = toScreenPoint(appState.base, { x: customer.x, y: customer.y });
-  const bodyRadius = Math.round(7 * BASE_CONSTANTS.GLOBAL_SCALE);
-
-  targetCtx.fillStyle = "#f2d2b6";
-  targetCtx.beginPath();
-  targetCtx.arc(screenPoint.x, screenPoint.y - bodyRadius * 1.7, bodyRadius * 0.72, 0, Math.PI * 2);
-  targetCtx.fill();
-
-  targetCtx.fillStyle = customer.state === "buying" ? "#4d8bc7" : "#b5644c";
-  targetCtx.fillRect(screenPoint.x - bodyRadius, screenPoint.y - bodyRadius, bodyRadius * 2, bodyRadius * 2.4);
+  drawCustomerSprite(targetCtx, screenPoint);
 
   if (customer.state === "waiting" && getSaleTableItems().length === 0) {
     const barWidth = Math.round(44 * BASE_CONSTANTS.GLOBAL_SCALE);
     const barHeight = Math.max(4, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE));
     const x = screenPoint.x - barWidth / 2;
-    const y = screenPoint.y - bodyRadius * 3.1;
+    const y = screenPoint.y - Math.round(54 * BASE_CONSTANTS.GLOBAL_SCALE);
     const ratio = clamp(customer.patienceRemaining / CUSTOMER_PATIENCE_SECONDS, 0, 1);
 
     targetCtx.fillStyle = "rgba(20, 15, 14, 0.8)";
@@ -1586,6 +1662,124 @@ function drawCustomer(targetCtx: CanvasRenderingContext2D): void {
     targetCtx.strokeStyle = "rgba(255, 245, 223, 0.8)";
     targetCtx.strokeRect(x, y, barWidth, barHeight);
   }
+}
+
+function drawCustomerSprite(targetCtx: CanvasRenderingContext2D, screenPoint: Vector2): void {
+  const customer = appState.shop.customer;
+  const drawWidth = Math.round(CUSTOMER_FRAME_SIZE * BASE_CONSTANTS.GLOBAL_SCALE * CUSTOMER_DRAW_SCALE);
+  const drawHeight = Math.round(CUSTOMER_FRAME_SIZE * BASE_CONSTANTS.GLOBAL_SCALE * CUSTOMER_DRAW_SCALE);
+  const screenX = Math.round(screenPoint.x - drawWidth / 2);
+  const screenY = Math.round(screenPoint.y - drawHeight + BASE_CONSTANTS.PLAYER_SIZE / 2);
+  const source = customer.isMoving ? customerWalkImages : customerIdleImages;
+  const sprite = source[customer.facing];
+
+  if (!sprite.complete) {
+    drawCustomerFallback(targetCtx, screenPoint);
+    return;
+  }
+
+  const palette = CUSTOMER_CLOTHING_COLORS[customer.spriteIndex % CUSTOMER_CLOTHING_COLORS.length] ?? CUSTOMER_CLOTHING_COLORS[0];
+  const tintedSprite = getTintedCustomerSprite(sprite, palette);
+  const frameCount = customer.isMoving ? CUSTOMER_WALK_FRAMES : CUSTOMER_IDLE_FRAMES;
+  const frame = customer.isMoving
+    ? Math.floor(customer.animationTime / CUSTOMER_WALK_FRAME_SECONDS) % frameCount
+    : 0;
+
+  targetCtx.drawImage(
+    tintedSprite,
+    frame * CUSTOMER_FRAME_SIZE,
+    0,
+    CUSTOMER_FRAME_SIZE,
+    CUSTOMER_FRAME_SIZE,
+    screenX,
+    screenY,
+    drawWidth,
+    drawHeight,
+  );
+}
+
+function drawCustomerFallback(targetCtx: CanvasRenderingContext2D, screenPoint: Vector2): void {
+  const customer = appState.shop.customer;
+  const bodyRadius = Math.round(7 * BASE_CONSTANTS.GLOBAL_SCALE);
+
+  targetCtx.fillStyle = "#f2d2b6";
+  targetCtx.beginPath();
+  targetCtx.arc(screenPoint.x, screenPoint.y - bodyRadius * 1.7, bodyRadius * 0.72, 0, Math.PI * 2);
+  targetCtx.fill();
+
+  targetCtx.fillStyle = customer.state === "buying" ? "#4d8bc7" : "#b5644c";
+  targetCtx.fillRect(screenPoint.x - bodyRadius, screenPoint.y - bodyRadius, bodyRadius * 2, bodyRadius * 2.4);
+}
+
+function loadCustomerDirectionImages(urls: Record<PlayerDirection, string>): Record<PlayerDirection, HTMLImageElement> {
+  return {
+    down: loadCustomerImage(urls.down),
+    left: loadCustomerImage(urls.left),
+    right: loadCustomerImage(urls.right),
+    up: loadCustomerImage(urls.up),
+  };
+}
+
+function loadCustomerImage(src: string): HTMLImageElement {
+  const image = new Image();
+  image.src = src;
+  return image;
+}
+
+function getTintedCustomerSprite(source: HTMLImageElement, clothingColor: string): HTMLCanvasElement {
+  const cacheKey = `${source.src}:${clothingColor}`;
+  const cached = tintedCustomerSpriteCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const canvasEl = document.createElement("canvas");
+  canvasEl.width = source.naturalWidth;
+  canvasEl.height = source.naturalHeight;
+  const context = canvasEl.getContext("2d");
+  if (!context) {
+    return canvasEl;
+  }
+
+  context.drawImage(source, 0, 0);
+  const imageData = context.getImageData(0, 0, canvasEl.width, canvasEl.height);
+  const target = parseHexColor(clothingColor);
+  for (let index = 0; index < imageData.data.length; index += 4) {
+    const alpha = imageData.data[index + 3] ?? 0;
+    if (alpha === 0) {
+      continue;
+    }
+
+    const red = imageData.data[index] ?? 0;
+    const green = imageData.data[index + 1] ?? 0;
+    const blue = imageData.data[index + 2] ?? 0;
+    if (!isPlayerClothingPixel(red, green, blue)) {
+      continue;
+    }
+
+    const shade = clamp((red + green + blue) / (255 * 3), 0, 1);
+    const multiplier = 0.48 + shade * 0.82;
+    imageData.data[index] = Math.round(target.r * multiplier);
+    imageData.data[index + 1] = Math.round(target.g * multiplier);
+    imageData.data[index + 2] = Math.round(target.b * multiplier);
+  }
+
+  context.putImageData(imageData, 0, 0);
+  tintedCustomerSpriteCache.set(cacheKey, canvasEl);
+  return canvasEl;
+}
+
+function isPlayerClothingPixel(red: number, green: number, blue: number): boolean {
+  return blue > red + 12 && blue > green + 4 && green > 35;
+}
+
+function parseHexColor(hex: string): { r: number; g: number; b: number } {
+  const cleaned = hex.replace("#", "");
+  return {
+    r: Number.parseInt(cleaned.slice(0, 2), 16),
+    g: Number.parseInt(cleaned.slice(2, 4), 16),
+    b: Number.parseInt(cleaned.slice(4, 6), 16),
+  };
 }
 
 function updateWorldMarkers(): void {

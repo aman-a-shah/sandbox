@@ -14,6 +14,13 @@ export interface ShopCustomerState {
   state: "arriving" | "waiting" | "buying" | "leaving";
   patienceRemaining: number;
   purchaseTimer: number;
+  spriteIndex: number;
+  facing: "down" | "left" | "right" | "up";
+  isMoving: boolean;
+  animationTime: number;
+  pathPhase: "vertical" | "horizontal";
+  stopOffsetX: number;
+  stopOffsetY: number;
 }
 
 export interface RecipeStub {

@@ -34,6 +34,13 @@ export function createShopCustomerState(): ShopCustomerState {
     state: "arriving",
     patienceRemaining: 30,
     purchaseTimer: 0,
+    spriteIndex: 0,
+    facing: "up",
+    isMoving: false,
+    animationTime: 0,
+    pathPhase: "vertical",
+    stopOffsetX: 0,
+    stopOffsetY: 0,
   };
 }
 

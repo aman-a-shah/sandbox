@@ -184,6 +184,10 @@ export function renderRecipeBook(state: RecipeBookState, domRefs: ShopDomRefs): 
   const pageCount = getRecipeBookPageCount(state);
   state.currentPage = Math.min(Math.max(state.currentPage, 0), pageCount - 1);
   const pageRecipes = getRecipesForPage(state, state.currentPage);
+  const selectedRecipeIsOnPage = pageRecipes.some((recipe) => recipe.id === state.selectedRecipeId);
+  if (!selectedRecipeIsOnPage) {
+    state.selectedRecipeId = pageRecipes[0]?.id ?? null;
+  }
   const selectedRecipe = getSelectedRecipe(state);
 
   domRefs.recipeBookGridEl.innerHTML = "";
