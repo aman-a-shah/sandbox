@@ -63,10 +63,10 @@ export function renderInventory(domRefs: InventoryDomRefs, state: InventoryState
         slotButtonEl.classList.add("is-selected");
       }
 
-      const slotLabel = slotFish ? escapeHtml(slotFish.name) : `Slot ${slot.slotIndex + 1}`;
+      const slotLabel = slotItem ? escapeHtml(slotItem.name) : `Slot ${slot.slotIndex + 1}`;
       slotButtonEl.innerHTML = [
         `<span class=\"inventory-slot-image\">${
-          slotFish ? getFishSpriteMarkup(slotFish.id, "slot", slotFish.placeholderVisual) : "EMPTY"
+          slotItem ? getFishSpriteMarkup(slotItem.id, "slot", slotItem.placeholderVisual) : "EMPTY"
         }</span>`,
         `<p class=\"inventory-slot-label\">${slotLabel}</p>`,
       ].join("");
