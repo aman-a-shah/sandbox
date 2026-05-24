@@ -1,5 +1,6 @@
 import { escapeHtml } from "../../core/utils";
-import { getInventoryUsedSlots, getSelectedInventoryFish, selectDiscoveredFish, selectInventorySlot } from "./system";
+import type { InventorySlot } from "./types";
+import { getInventoryUsedSlots, getSelectedInventoryItem, selectDiscoveredFish, selectInventorySlot } from "./system";
 import type { InventoryDomRefs, InventoryState } from "./types";
 
 const fishSheetUrl = "/sprites-clean/fish_transparent.png";
@@ -36,47 +37,48 @@ export function syncInventoryOverlay(domRefs: InventoryDomRefs, state: Inventory
   domRefs.overlayEl.classList.toggle("is-hidden", !state.isOpen);
   domRefs.overlayEl.setAttribute("aria-hidden", String(!state.isOpen));
   domRefs.toggleButtonEl.setAttribute("aria-expanded", String(state.isOpen));
+  domRefs.modeBannerEl.classList.toggle("is-hidden", state.interactionMode !== "sale");
+  domRefs.salePanelEl.classList.toggle("is-hidden", state.interactionMode !== "sale");
 }
 
-export function renderInventory(domRefs: InventoryDomRefs, state: InventoryState): void {
+export function renderInventory(
+  domRefs: InventoryDomRefs,
+  state: InventoryState,
+  saleTableSlots: InventorySlot[] = [],
+  onMoveToSaleTable?: (slotIndex: number) => void,
+  onMoveToBackpack?: (slotIndex: number) => void,
+): void {
   const usedSlots = getInventoryUsedSlots(state);
   domRefs.bagTabButtonEl.classList.toggle("is-active", state.activeView === "bag");
   domRefs.discoveredTabButtonEl.classList.toggle("is-active", state.activeView === "discovered");
   domRefs.bagTabButtonEl.setAttribute("aria-selected", String(state.activeView === "bag"));
   domRefs.discoveredTabButtonEl.setAttribute("aria-selected", String(state.activeView === "discovered"));
+  domRefs.discoveredTabButtonEl.disabled = state.interactionMode === "sale";
+  domRefs.modeBannerEl.textContent =
+    state.interactionMode === "sale"
+      ? "Sale Table Mode: click backpack items to move them onto the table. Click table items to move them back."
+      : "";
   domRefs.gridEl.innerHTML = "";
+  domRefs.saleGridEl.innerHTML = "";
 
   if (state.activeView === "bag") {
     domRefs.capacityEl.textContent = `${usedSlots} / ${state.slots.length} slots used`;
-
-    for (const slot of state.slots) {
-      const slotButtonEl = document.createElement("button");
-      slotButtonEl.type = "button";
-      slotButtonEl.className = "inventory-slot";
-      const slotFish = slot.fish;
-
-      if (!slotFish) {
-        slotButtonEl.classList.add("is-empty");
-      }
-
-      if (state.selectedSlotIndex === slot.slotIndex) {
-        slotButtonEl.classList.add("is-selected");
-      }
-
-      const slotLabel = slotFish ? escapeHtml(slotFish.name) : `Slot ${slot.slotIndex + 1}`;
-      slotButtonEl.innerHTML = [
-        `<span class=\"inventory-slot-image\">${
-          slotFish ? getFishSpriteMarkup(slotFish.id, "slot", slotFish.placeholderVisual) : "EMPTY"
-        }</span>`,
-        `<p class=\"inventory-slot-label\">${slotLabel}</p>`,
-      ].join("");
-
-      slotButtonEl.addEventListener("click", () => {
+    renderSlotGrid(domRefs.gridEl, state.slots, state.selectedSlotIndex, (slot) => {
+      if (state.interactionMode === "sale" && onMoveToSaleTable) {
+        onMoveToSaleTable(slot.slotIndex);
+      } else {
         selectInventorySlot(state, slot.slotIndex);
-        renderInventory(domRefs, state);
-      });
+      }
+      renderInventory(domRefs, state, saleTableSlots, onMoveToSaleTable, onMoveToBackpack);
+    });
 
-      domRefs.gridEl.append(slotButtonEl);
+    if (state.interactionMode === "sale") {
+      const saleTableUsedSlots = saleTableSlots.reduce((count, slot) => count + (slot.item ? 1 : 0), 0);
+      domRefs.saleCapacityEl.textContent = `${saleTableUsedSlots} / ${saleTableSlots.length} slots used`;
+      renderSlotGrid(domRefs.saleGridEl, saleTableSlots, null, (slot) => {
+        onMoveToBackpack?.(slot.slotIndex);
+        renderInventory(domRefs, state, saleTableSlots, onMoveToSaleTable, onMoveToBackpack);
+      });
     }
   } else {
     domRefs.capacityEl.textContent = `${state.discoveredFish.length} fish discovered`;
@@ -101,7 +103,7 @@ export function renderInventory(domRefs: InventoryDomRefs, state: InventoryState
 
         slotButtonEl.addEventListener("click", () => {
           selectDiscoveredFish(state, fish.id);
-          renderInventory(domRefs, state);
+          renderInventory(domRefs, state, saleTableSlots, onMoveToSaleTable, onMoveToBackpack);
         });
 
         domRefs.gridEl.append(slotButtonEl);
@@ -111,23 +113,75 @@ export function renderInventory(domRefs: InventoryDomRefs, state: InventoryState
 
   domRefs.gridEl.classList.toggle("inventory-grid--discovered", state.activeView === "discovered");
   hydrateFishSprites(domRefs.gridEl);
+  hydrateFishSprites(domRefs.saleGridEl);
 
   renderInventoryDetails(domRefs, state);
 }
 
+function renderSlotGrid(
+  rootEl: HTMLDivElement,
+  slots: InventorySlot[],
+  selectedSlotIndex: number | null,
+  onClick: (slot: InventorySlot) => void,
+): void {
+  for (const slot of slots) {
+    const slotButtonEl = document.createElement("button");
+    slotButtonEl.type = "button";
+    slotButtonEl.className = "inventory-slot";
+    const slotItem = slot.item;
+
+    if (!slotItem) {
+      slotButtonEl.classList.add("is-empty");
+    }
+
+    if (selectedSlotIndex === slot.slotIndex) {
+      slotButtonEl.classList.add("is-selected");
+    }
+
+    const slotLabel = slotItem ? escapeHtml(slotItem.name) : `Slot ${slot.slotIndex + 1}`;
+    slotButtonEl.innerHTML = [
+      `<span class=\"inventory-slot-image\">${
+        slotItem ? getFishSpriteMarkup(slotItem.id, "slot", slotItem.placeholderVisual) : "EMPTY"
+      }</span>`,
+      `<p class=\"inventory-slot-label\">${slotLabel}</p>`,
+    ].join("");
+
+    slotButtonEl.addEventListener("click", () => onClick(slot));
+    rootEl.append(slotButtonEl);
+  }
+}
+
 export function renderInventoryDetails(domRefs: InventoryDomRefs, state: InventoryState): void {
-  const selectedFish = getSelectedInventoryFish(state);
-  if (!selectedFish) {
-    domRefs.detailsEl.innerHTML = "<p class=\"inventory-details-placeholder\">Select a fish slot to see details.</p>";
+  const selectedItem = getSelectedInventoryItem(state);
+  if (!selectedItem) {
+    domRefs.detailsEl.innerHTML = "<p class=\"inventory-details-placeholder\">Select an item to see details.</p>";
     return;
   }
 
+  if (selectedItem.kind === "food") {
+    const rarityToken = selectedItem.rarity.toLowerCase();
+    domRefs.detailsEl.innerHTML = [
+      `<div class=\"inventory-details-image\">${escapeHtml(selectedItem.placeholderVisual)} Cooked Dish</div>`,
+      `<h4 class=\"inventory-details-title\">${escapeHtml(selectedItem.name)}</h4>`,
+      `<p class=\"inventory-rarity\" data-rarity=\"${rarityToken}\">${escapeHtml(selectedItem.rarity)}</p>`,
+      "<dl class=\"inventory-detail-list\">",
+      `<dt>Type</dt><dd>Cooked Food</dd>`,
+      `<dt>Main Fish</dt><dd>${escapeHtml(selectedItem.requiredFishName)}</dd>`,
+      `<dt>Cook Time</dt><dd>${escapeHtml(`${selectedItem.cookTimeMinutes} min`)}</dd>`,
+      `<dt>Servings</dt><dd>${escapeHtml(selectedItem.servingsLabel.replace(/^Servings:\\s*/, ""))}</dd>`,
+      `<dt>Calories</dt><dd>${selectedItem.calories === null ? "Unknown" : escapeHtml(String(selectedItem.calories))}</dd>`,
+      `<dt>Value</dt><dd>$${selectedItem.value.toFixed(2)}</dd>`,
+      "</dl>",
+    ].join("");
+    return;
+  }
+
+  const selectedFish = selectedItem;
   const rarityToken = selectedFish.rarity.toLowerCase();
   const depthText =
     selectedFish.averageDepthMeters === null ? "Unknown" : `${selectedFish.averageDepthMeters.toFixed(1)} m`;
   const lengthText =
     selectedFish.fishBaseCommonLengthCm === null ? "Unknown" : `${selectedFish.fishBaseCommonLengthCm} cm`;
-  const substratumText = selectedFish.habitatSubstratum.length > 0 ? selectedFish.habitatSubstratum.join(", ") : "Unknown";
   const distributionText =
     selectedFish.wormsDistributionSummary.length > 0 ? selectedFish.wormsDistributionSummary.join(", ") : "No summary";
 

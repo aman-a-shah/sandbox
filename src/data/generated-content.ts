@@ -1,6 +1,6 @@
 import fallbackHabitatData from "../../generated/fish-by-habitat/coralline-crusts-in-surge-gullies-and-scoured-infralittoral-rock.json";
 
-import type { InventoryFishDefinition } from "../features/inventory";
+import type { InventoryFishDefinition, InventoryFoodDefinition } from "../features/inventory";
 import type { RecipeBookRecipe } from "../features/shop";
 
 interface HabitatFishRecord {
@@ -64,6 +64,7 @@ interface MasterRecipeFishEntry {
     observedSpeciesRecordPercent: number | null;
     fishingActivityAssociatedPercent: number | null;
     sizeCategory: string | null;
+    fishBaseCommonLengthCm?: number | null;
     averageDepthMeters: number | null;
   };
   recipes: RecipeRecord[];
@@ -127,6 +128,8 @@ const EMPTY_MASTER_RECIPES: MasterRecipeFile = {
 };
 
 const LEGACY_FALLBACK_JSON_PATH = "generated/fish-by-habitat/coralline-crusts-in-surge-gullies-and-scoured-infralittoral-rock.json";
+const BASELINE_FISH_PRICE = 15.5;
+const BASELINE_CATCH_PERCENT = 13.5;
 
 const habitatDataModules = import.meta.glob("../../generated/fish-by-habitat/*.json", {
   eager: true,
@@ -137,6 +140,10 @@ function slugify(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function toTitleCase(value: string | null | undefined): string {
+  return (value ?? "").replace(/\b([a-z])/g, (match) => match.toUpperCase());
 }
 
 function createVisualToken(commonName: string): string {
@@ -151,25 +158,58 @@ function createVisualToken(commonName: string): string {
 }
 
 function inferRarity(likelyCatchPercent: number): InventoryFishDefinition["rarity"] {
-  if (likelyCatchPercent >= 9.5) {
+  if (likelyCatchPercent >= 18) {
     return "Common";
   }
 
-  if (likelyCatchPercent >= 8.25) {
+  if (likelyCatchPercent >= 9) {
     return "Uncommon";
   }
 
-  if (likelyCatchPercent >= 7) {
+  if (likelyCatchPercent >= 4) {
     return "Rare";
   }
 
   return "Legendary";
 }
 
-function inferValue(likelyCatchPercent: number, averageDepthMeters: number | null): number {
-  const scarcityMultiplier = Math.max(1.15, 14 / Math.max(likelyCatchPercent, 1));
-  const depthBonus = averageDepthMeters ? Math.min(averageDepthMeters / 12, 9) : 0;
-  return Number((8 + scarcityMultiplier * 3.2 + depthBonus).toFixed(2));
+function inferLengthFromSizeCategory(sizeCategory: string | null): number {
+  const normalized = (sizeCategory ?? "").toLowerCase();
+  if (normalized.includes("small-medium")) {
+    return 7;
+  }
+  if (normalized.includes("medium-large")) {
+    return 30;
+  }
+  if (normalized.includes("large")) {
+    return 60;
+  }
+  if (normalized.includes("medium")) {
+    return 15;
+  }
+  return 15;
+}
+
+function inferFishUnitPrice(
+  likelyCatchPercent: number,
+  fishBaseCommonLengthCm: number | null,
+  sizeCategory: string | null,
+): number {
+  const effectiveLengthCm = fishBaseCommonLengthCm ?? inferLengthFromSizeCategory(sizeCategory);
+  const scarcityFactor = Math.min(
+    2.8,
+    Math.max(0.7, Math.pow(BASELINE_CATCH_PERCENT / Math.max(likelyCatchPercent, 0.5), 0.6)),
+  );
+  const sizeFactor = Math.min(2.4, Math.max(0.75, 1 + (effectiveLengthCm - 15) / 90));
+  return Number((BASELINE_FISH_PRICE * scarcityFactor * sizeFactor).toFixed(2));
+}
+
+function inferValue(
+  likelyCatchPercent: number,
+  fishBaseCommonLengthCm: number | null,
+  sizeCategory: string | null,
+): number {
+  return inferFishUnitPrice(likelyCatchPercent, fishBaseCommonLengthCm, sizeCategory);
 }
 
 function normalizeFishName(value: string | null | undefined): string {
@@ -196,19 +236,30 @@ function toPublicJsonPath(modulePath: string): string {
   return unixPath.replace(/^(\.\.\/)+/, "");
 }
 
+function replaceFishDisplayName(text: string | null | undefined, rawFishName: string, displayFishName: string): string | null {
+  if (!text) {
+    return text ?? null;
+  }
+
+  const escapedRawFishName = rawFishName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text.replace(new RegExp(escapedRawFishName, "gi"), displayFishName);
+}
+
 function mapHabitatFishToInventoryFish(
   record: HabitatFishRecord,
   habitat: HabitatDataFile["habitat"],
 ): InventoryFishDefinition {
+  const displayName = toTitleCase(record.commonName);
   const habitatName = habitat.habitatInformationName;
   return {
+    kind: "fish",
     id: slugify(record.commonName),
-    name: record.commonName,
+    name: displayName,
     scientificName: record.scientificName,
     region: habitatName,
     rarity: inferRarity(record.likelyCatchPercent),
-    value: inferValue(record.likelyCatchPercent, record.averageDepthMeters),
-    placeholderVisual: createVisualToken(record.commonName),
+    value: inferValue(record.likelyCatchPercent, record.fishBaseCommonLengthCm, record.sizeCategory),
+    placeholderVisual: createVisualToken(displayName),
     family: record.family,
     order: record.order,
     aphiaId: record.aphiaId === null ? null : String(record.aphiaId),
@@ -230,6 +281,17 @@ function mapHabitatFishToInventoryFish(
     habitatDepthZone: habitat.inferredDepthZone,
     habitatSubstratum: habitat.inferredSubstratum ?? [],
   };
+}
+
+function createFoodVisualToken(recipeName: string): string {
+  const initials = recipeName
+    .split(/\s+/)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+
+  return initials || "FOOD";
 }
 
 function buildHabitatCatchProfile(modulePath: string, habitatData: HabitatDataFile): HabitatCatchProfile {
@@ -323,24 +385,69 @@ function sumRequiredFishQuantity(recipe: RecipeRecord): number {
   return Math.max(1, Math.round(ingredientQuantity || 1));
 }
 
+function buildNutritionLines(recipe: RecipeRecord): string[] {
+  const entries: string[] = [];
+  if (recipe.nutrition.calories !== null) entries.push(`Calories: ${recipe.nutrition.calories}`);
+  if (recipe.nutrition.protein !== null) entries.push(`Protein: ${recipe.nutrition.protein} g`);
+  if (recipe.nutrition.fat !== null) entries.push(`Fat: ${recipe.nutrition.fat} g`);
+  if (recipe.nutrition.carbohydrates !== null) entries.push(`Carbs: ${recipe.nutrition.carbohydrates} g`);
+  if (recipe.nutrition.sodium !== null) entries.push(`Sodium: ${recipe.nutrition.sodium} mg`);
+  if (recipe.nutrition.servingSize !== null && recipe.nutrition.servingUnit) {
+    entries.push(`Serving Size: ${recipe.nutrition.servingSize} ${recipe.nutrition.servingUnit}`);
+  }
+  return entries;
+}
+
+function buildDisplayIngredients(recipe: RecipeRecord, rawFishName: string, displayFishName: string): RecipeBookRecipe["ingredients"] {
+  const required = recipe.recipe.ingredients
+    .filter((ingredient) => ingredient.isRequiredFishIngredient)
+    .map((ingredient) => ({
+      text: replaceFishDisplayName(ingredient.original || ingredient.name, rawFishName, displayFishName) ?? displayFishName,
+      isRequiredFishIngredient: true,
+    }));
+
+  const remaining = recipe.recipe.ingredients
+    .filter((ingredient) => !ingredient.isRequiredFishIngredient)
+    .map((ingredient) => ({
+      text: replaceFishDisplayName(ingredient.original || ingredient.name, rawFishName, displayFishName) ?? ingredient.name,
+      isRequiredFishIngredient: false,
+    }));
+
+  return [...required, ...remaining];
+}
+
 function mapRecipeRecordToRecipeBookRecipe(entry: MasterRecipeFishEntry, recipe: RecipeRecord): RecipeBookRecipe {
+  const rawFishName = entry.fish.commonName;
+  const displayFishName = toTitleCase(rawFishName);
   const requiredQuantity = sumRequiredFishQuantity(recipe);
+  const craftCost = Number((((recipe.estimatedPrice.basePriceFromApi ?? 0) / 5) || 0).toFixed(2));
 
   return {
     id: String(recipe.recipeId),
-    name: recipe.title,
-    subtitle: `${entry.fish.commonName} x${requiredQuantity} • ${recipe.rarity}`,
+    name: replaceFishDisplayName(recipe.title, rawFishName, displayFishName) ?? recipe.title,
     cookTimeMinutes: recipe.readyInMinutes ?? 0,
-    requiredFishName: entry.fish.commonName,
+    requiredFishName: displayFishName,
     requiredFishScientificName: entry.fish.scientificName,
+    currentFishQuantity: 0,
     requiredFishQuantity: requiredQuantity,
     rarity: recipe.rarity,
     estimatedPrice: recipe.estimatedPrice.total,
+    craftCost,
     calories: recipe.nutrition.calories,
-    instructions: recipe.recipe.instructions,
+    instructions: replaceFishDisplayName(recipe.recipe.instructions, rawFishName, displayFishName),
+    hasRequiredFish: true,
+    canAfford: true,
     isCraftable: true,
     missingRequiredFishCount: 0,
+    missingBalanceAmount: 0,
     availabilityLabel: "Ready to cook",
+    summary: replaceFishDisplayName(recipe.recipe.summary, rawFishName, displayFishName),
+    dishTypes: recipe.recipe.dishTypes,
+    cuisines: recipe.recipe.cuisines,
+    diets: recipe.recipe.diets,
+    servingsLabel: recipe.servings === null ? "Servings: Unknown" : `Servings: ${recipe.servings}`,
+    nutritionLines: buildNutritionLines(recipe),
+    ingredients: buildDisplayIngredients(recipe, rawFishName, displayFishName),
   };
 }
 
@@ -383,6 +490,28 @@ export function getDefaultMasterRecipes(): MasterRecipeFile {
   return structuredClone(EMPTY_MASTER_RECIPES);
 }
 
+export function createCookedFoodFromRecipe(recipe: RecipeBookRecipe): InventoryFoodDefinition {
+  const rarity =
+    recipe.rarity === "Legendary" || recipe.rarity === "Rare" || recipe.rarity === "Uncommon" || recipe.rarity === "Common"
+      ? recipe.rarity
+      : "Common";
+
+  return {
+    kind: "food",
+    id: `food-${slugify(recipe.id)}-${slugify(recipe.name)}`,
+    recipeId: recipe.id,
+    name: recipe.name,
+    rarity,
+    value: Number((recipe.estimatedPrice ?? 10).toFixed(2)),
+    placeholderVisual: createFoodVisualToken(recipe.name),
+    requiredFishName: recipe.requiredFishName,
+    servingsLabel: recipe.servingsLabel,
+    cookTimeMinutes: recipe.cookTimeMinutes,
+    calories: recipe.calories,
+    summary: recipe.summary,
+  };
+}
+
 export function rollRandomCatchFromFallbackHabitat(): InventoryFishDefinition {
   return rollRandomCatchForHabitat(null);
 }
@@ -419,8 +548,9 @@ export function getCraftableRecipesForInventory(
 
   for (const fishEntry of recipeSource.fishRecipes) {
     const possibleKeys = [
-      normalizeFishName(fishEntry.fish.commonName),
+      normalizeFishName(toTitleCase(fishEntry.fish.commonName)),
       normalizeFishName(fishEntry.fish.scientificName),
+      normalizeFishName(fishEntry.fish.commonName),
     ].filter(Boolean);
 
     const isDiscovered = possibleKeys.some((key) => discoveredKeys.has(key));
@@ -434,12 +564,13 @@ export function getCraftableRecipesForInventory(
       const mappedRecipe = mapRecipeRecordToRecipeBookRecipe(fishEntry, recipe);
       const missingRequiredFishCount = Math.max(0, requiredQuantity - availableCount);
 
+      mappedRecipe.currentFishQuantity = availableCount;
       mappedRecipe.isCraftable = missingRequiredFishCount === 0;
       mappedRecipe.missingRequiredFishCount = missingRequiredFishCount;
       mappedRecipe.availabilityLabel =
         missingRequiredFishCount === 0
           ? "Ready to cook"
-          : `Need ${missingRequiredFishCount} more ${fishEntry.fish.commonName}`;
+          : `Need ${missingRequiredFishCount} more ${mappedRecipe.requiredFishName}`;
 
       visibleRecipes.push(mappedRecipe);
     }

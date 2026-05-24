@@ -3,6 +3,7 @@ import { GAME_CONFIG } from "./core/config/gameConfig";
 import type { Vector2 } from "./core/types/vector";
 import { clamp, getCanvasCoordinates, mustGet2DContext, mustGetElement, resizeCanvasDisplay } from "./core/utils";
 import {
+  createCookedFoodFromRecipe,
   getDefaultHabitatId,
   getCraftableRecipesForInventory,
   getDefaultMasterRecipes,
@@ -39,16 +40,32 @@ import {
   getDiscoveredFish,
   getInventoryFish,
   getInventoryUsedSlots,
+  removeItemFromSlotsByIndex,
   registerDiscoveredFish,
+  removeFishFromInventory,
   renderInventory,
   selectDiscoveredFish,
+  setInventoryInteractionMode,
   setInventoryOpen,
   setInventoryView,
   syncInventoryOverlay,
+  tryAddFoodToInventory,
   tryAddFishToInventory,
+  tryAddItemToSlots,
 } from "./features/inventory";
 import type { InventoryDomRefs } from "./features/inventory";
-import { closeRecipeBook, createShopState, drawWorkstation, getRecipeBookPageCount, isPlayerNearWorkstation, openRecipeBook, renderRecipeBook, setRecipeBookRecipes } from "./features/shop";
+import {
+  closeRecipeBook,
+  createShopState,
+  drawWorkstation,
+  getRecipeBookPageCount,
+  getSelectedRecipe,
+  isPlayerNearSaleTable,
+  isPlayerNearWorkstation,
+  openRecipeBook,
+  renderRecipeBook,
+  setRecipeBookRecipes,
+} from "./features/shop";
 import type { ShopDomRefs } from "./features/shop";
 
 interface ExpandedMapLayout {
@@ -107,11 +124,23 @@ interface GameDebugControls {
   getSelectedHabitat: () => SelectedHabitatDebugSnapshot | null;
 }
 
+interface CustomerTarget {
+  x: number;
+  y: number;
+}
+
 declare global {
   interface Window {
     gameDebug?: GameDebugControls;
   }
 }
+
+const CAST_COST = 10;
+const BANKRUPTCY_LIMIT = -1000;
+const CUSTOMER_PATIENCE_SECONDS = 30;
+const CUSTOMER_EMPTY_PENALTY = 50;
+const CUSTOMER_SPEED = 52;
+const CUSTOMER_PURCHASE_DELAY = 1.6;
 
 const OCEAN_REGION_DEBUG_COLORS = [
   "#4cb26f",
@@ -213,24 +242,39 @@ const inventoryDiscoveredTabButtonEl = mustGetElement<HTMLButtonElement>("invent
 const inventoryOverlayEl = mustGetElement<HTMLElement>("inventory-overlay");
 const inventoryCloseButtonEl = mustGetElement<HTMLButtonElement>("inventory-close");
 const inventoryGridEl = mustGetElement<HTMLDivElement>("inventory-grid");
+const saleTableGridEl = mustGetElement<HTMLDivElement>("sale-table-grid");
+const saleTablePanelEl = mustGetElement<HTMLElement>("sale-table-panel");
+const saleTableCapacityEl = mustGetElement<HTMLElement>("sale-table-capacity");
 const inventoryDetailsEl = mustGetElement<HTMLDivElement>("inventory-details");
 const inventoryCapacityEl = mustGetElement<HTMLElement>("inventory-capacity");
+const inventoryModeBannerEl = mustGetElement<HTMLElement>("inventory-mode-banner");
 
 const workstationPromptEl = mustGetElement<HTMLElement>("workstation-prompt");
+const craftToastEl = mustGetElement<HTMLElement>("craft-toast");
+const balanceDisplayEl = mustGetElement<HTMLElement>("balance-display");
+const moneyDeltaStackEl = mustGetElement<HTMLDivElement>("money-delta-stack");
+const cookMarkerEl = mustGetElement<HTMLElement>("cook-marker");
+const sellMarkerEl = mustGetElement<HTMLElement>("sell-marker");
 const recipeBookOverlayEl = mustGetElement<HTMLElement>("recipe-book-overlay");
 const recipeBookGridEl = mustGetElement<HTMLDivElement>("recipe-book-grid");
+const recipeBookDetailsEl = mustGetElement<HTMLDivElement>("recipe-book-details");
+const recipeBookCookButtonEl = mustGetElement<HTMLButtonElement>("recipe-book-cook");
 const recipeBookCloseButtonEl = mustGetElement<HTMLButtonElement>("recipe-book-close");
 const recipeBookPrevButtonEl = mustGetElement<HTMLButtonElement>("recipe-book-prev");
 const recipeBookNextButtonEl = mustGetElement<HTMLButtonElement>("recipe-book-next");
 const recipeBookPageIndicatorEl = mustGetElement<HTMLElement>("recipe-book-page-indicator");
-const recipeBookSelectionStatusEl = mustGetElement<HTMLElement>("recipe-book-selection-status");
+const gameOverOverlayEl = mustGetElement<HTMLElement>("game-over-overlay");
 
 const inventoryDomRefs: InventoryDomRefs = {
   toggleButtonEl: inventoryToggleButtonEl,
   bagTabButtonEl: inventoryBagTabButtonEl,
   discoveredTabButtonEl: inventoryDiscoveredTabButtonEl,
   overlayEl: inventoryOverlayEl,
+  modeBannerEl: inventoryModeBannerEl,
   gridEl: inventoryGridEl,
+  saleGridEl: saleTableGridEl,
+  salePanelEl: saleTablePanelEl,
+  saleCapacityEl: saleTableCapacityEl,
   detailsEl: inventoryDetailsEl,
   capacityEl: inventoryCapacityEl,
 };
@@ -239,11 +283,12 @@ const shopDomRefs: ShopDomRefs = {
   workstationPromptEl,
   recipeBookOverlayEl,
   recipeBookGridEl,
+  recipeBookDetailsEl,
+  recipeBookCookButtonEl,
   recipeBookCloseButtonEl,
   recipeBookPrevButtonEl,
   recipeBookNextButtonEl,
   recipeBookPageIndicatorEl,
-  recipeBookSelectionStatusEl,
 };
 
 const oceanHabitatRoutes = createOceanHabitatRoutes();
@@ -261,6 +306,11 @@ const appState: AppState = {
   inventory: createInventoryState(INVENTORY_CAPACITY),
   shop: createShopState(),
   travel: createOceanTravelState(baseState),
+  economy: {
+    balance: 0,
+    bankruptcyThreshold: BANKRUPTCY_LIMIT,
+    isGameOver: false,
+  },
   keysDown: new Set<string>(),
   fps: 0,
   lastFrameTime: performance.now(),
@@ -288,12 +338,17 @@ centerCameraOnPlayer(appState.base);
 refreshCraftableRecipes();
 void hydrateMasterRecipes();
 renderStatusReadout();
+renderBalanceHud();
 syncInventoryOverlay(inventoryDomRefs, appState.inventory);
-renderInventory(inventoryDomRefs, appState.inventory);
+renderInventoryUi();
 renderRecipeBook(appState.shop.recipeBook, shopDomRefs);
 updateInteractionPromptVisibility();
 
 window.addEventListener("keydown", (event: KeyboardEvent) => {
+  if (appState.economy.isGameOver) {
+    return;
+  }
+
   const key = event.key.toLowerCase();
   appState.keysDown.add(key);
 
@@ -318,7 +373,10 @@ window.addEventListener("keydown", (event: KeyboardEvent) => {
     if (tryOpenOceanMapFromDock()) {
       return;
     }
-    tryOpenRecipeBookFromWorkstation();
+    if (tryOpenRecipeBookFromWorkstation()) {
+      return;
+    }
+    tryOpenSaleManagement();
   }
 });
 
@@ -354,7 +412,7 @@ inventoryToggleButtonEl.addEventListener("click", () => {
 inventoryCloseButtonEl.addEventListener("click", closeInventory);
 inventoryBagTabButtonEl.addEventListener("click", () => {
   setInventoryView(appState.inventory, "bag");
-  renderInventory(inventoryDomRefs, appState.inventory);
+  renderInventoryUi();
 });
 inventoryDiscoveredTabButtonEl.addEventListener("click", () => {
   setInventoryView(appState.inventory, "discovered");
@@ -362,7 +420,7 @@ inventoryDiscoveredTabButtonEl.addEventListener("click", () => {
   if (discoveredFish.length > 0 && appState.inventory.selectedDiscoveredFishId === null) {
     selectDiscoveredFish(appState.inventory, discoveredFish[0].id);
   }
-  renderInventory(inventoryDomRefs, appState.inventory);
+  renderInventoryUi();
 });
 inventoryOverlayEl.addEventListener("click", (event: MouseEvent) => {
   if (event.target === inventoryOverlayEl) {
@@ -371,6 +429,9 @@ inventoryOverlayEl.addEventListener("click", (event: MouseEvent) => {
 });
 
 recipeBookCloseButtonEl.addEventListener("click", closeRecipeBookOverlay);
+recipeBookCookButtonEl.addEventListener("click", () => {
+  cookSelectedRecipe();
+});
 
 recipeBookPrevButtonEl.addEventListener("click", () => {
   if (appState.shop.recipeBook.currentPage <= 0) {
@@ -405,6 +466,11 @@ function gameLoop(timestamp: number): void {
 }
 
 function update(dt: number): void {
+  if (appState.economy.isGameOver) {
+    renderStatusReadout();
+    return;
+  }
+
   const velocity = getMovementVector(appState.keysDown, isInputLocked());
   const nextX = appState.base.player.x + velocity.x * BASE_CONSTANTS.PLAYER_SPEED * dt;
   const nextY = appState.base.player.y + velocity.y * BASE_CONSTANTS.PLAYER_SPEED * dt;
@@ -419,9 +485,10 @@ function update(dt: number): void {
     onCatchAttempt: attemptCatch,
     onCatchAdded: () => {
       refreshCraftableRecipes();
-      renderInventory(inventoryDomRefs, appState.inventory);
+      renderInventoryUi();
     },
   });
+  updateCustomers(dt);
   syncFishingStatusForActiveHabitat();
   updateInteractionPromptVisibility();
 
@@ -438,14 +505,20 @@ function render(): void {
     getRodOriginWorld,
   });
   drawWorkstation(renderCtx, appState.base.currentSceneId, appState.shop.workstation, appState.base.camera);
+  drawCustomer(renderCtx);
   drawCollisionDebugBoxes(renderCtx, appState.base, GAME_CONFIG.debugMode);
   drawPlayer(renderCtx, appState.base);
   drawMiniMap(renderCtx, appState.base);
   drawFishingHud(renderCtx, appState.fishing, appState.base.currentSceneId);
   drawOceanMapOverlay();
+  updateWorldMarkers();
 }
 
 function handleCanvasClick(event: MouseEvent): void {
+  if (appState.economy.isGameOver) {
+    return;
+  }
+
   const clickScreenPoint = getCanvasCoordinates(canvas, event);
 
   if (appState.travel.isMapOpen) {
@@ -475,6 +548,10 @@ function handleCanvasClick(event: MouseEvent): void {
   }
 
   const clickWorldPoint = toWorldPoint(appState.base, clickScreenPoint);
+  maybeChargeForCast(clickWorldPoint);
+  if (appState.economy.isGameOver) {
+    return;
+  }
   handleFishingClick(appState.fishing, clickWorldPoint, {
     currentSceneId: appState.base.currentSceneId,
     scenes: appState.base.scenes,
@@ -522,10 +599,12 @@ function openInventory(): void {
 
   closeOceanMap();
   closeRecipeBookOverlay();
+  appState.shop.isSaleManagementOpen = false;
+  setInventoryInteractionMode(appState.inventory, "default");
   setInventoryOpen(appState.inventory, true);
   refreshCraftableRecipes();
   syncInventoryOverlay(inventoryDomRefs, appState.inventory);
-  renderInventory(inventoryDomRefs, appState.inventory);
+  renderInventoryUi();
   updateInteractionPromptVisibility();
 }
 
@@ -534,9 +613,21 @@ function closeInventory(): void {
     return;
   }
 
+  appState.shop.isSaleManagementOpen = false;
+  setInventoryInteractionMode(appState.inventory, "default");
   setInventoryOpen(appState.inventory, false);
   syncInventoryOverlay(inventoryDomRefs, appState.inventory);
   updateInteractionPromptVisibility();
+}
+
+function renderInventoryUi(): void {
+  renderInventory(
+    inventoryDomRefs,
+    appState.inventory,
+    appState.shop.saleTableSlots,
+    moveItemFromBackpackToSaleTable,
+    moveItemFromSaleTableToBackpack,
+  );
 }
 
 function tryOpenOceanMapFromDock(): boolean {
@@ -548,12 +639,70 @@ function tryOpenOceanMapFromDock(): boolean {
   return true;
 }
 
-function tryOpenRecipeBookFromWorkstation(): void {
+function tryOpenRecipeBookFromWorkstation(): boolean {
   if (!isPlayerNearWorkstation(appState.base, appState.shop.workstation)) {
-    return;
+    return false;
   }
 
   openRecipeBookOverlay();
+  return true;
+}
+
+function tryOpenSaleManagement(): boolean {
+  if (!isPlayerNearSaleTable(appState.base, appState.shop.saleTable)) {
+    return false;
+  }
+
+  openSaleManagement();
+  return true;
+}
+
+function openSaleManagement(): void {
+  closeOceanMap();
+  closeRecipeBookOverlay();
+  appState.shop.isSaleManagementOpen = true;
+  setInventoryInteractionMode(appState.inventory, "sale");
+  setInventoryView(appState.inventory, "bag");
+  setInventoryOpen(appState.inventory, true);
+  syncInventoryOverlay(inventoryDomRefs, appState.inventory);
+  renderInventoryUi();
+  updateInteractionPromptVisibility();
+}
+
+function moveItemFromBackpackToSaleTable(slotIndex: number): void {
+  const removedItem = removeItemFromSlotsByIndex(appState.inventory.slots, slotIndex);
+  if (!removedItem) {
+    return;
+  }
+
+  const addResult = tryAddItemToSlots(appState.shop.saleTableSlots, removedItem);
+  if (!addResult.added) {
+    tryAddItemToSlots(appState.inventory.slots, removedItem);
+    showCraftToast("The sale table is full.");
+    return;
+  }
+
+  appState.inventory.selectedSlotIndex = appState.inventory.slots.find((slot) => slot.item !== null)?.slotIndex ?? null;
+}
+
+function moveItemFromSaleTableToBackpack(slotIndex: number): void {
+  const removedItem = removeItemFromSlotsByIndex(appState.shop.saleTableSlots, slotIndex);
+  if (!removedItem) {
+    return;
+  }
+
+  const addResult = tryAddItemToSlots(appState.inventory.slots, removedItem);
+  if (!addResult.added) {
+    tryAddItemToSlots(appState.shop.saleTableSlots, removedItem);
+    showCraftToast("Your backpack is full.");
+    return;
+  }
+
+  appState.inventory.selectedSlotIndex = addResult.slotIndex;
+}
+
+function getSaleTableItems() {
+  return appState.shop.saleTableSlots.flatMap((slot) => (slot.item ? [{ slotIndex: slot.slotIndex, item: slot.item }] : []));
 }
 
 function openRecipeBookOverlay(): void {
@@ -689,7 +838,34 @@ function attemptCatch(): { added: boolean; fishName: string } {
 function refreshCraftableRecipes(): void {
   const inventoryFish = getInventoryFish(appState.inventory);
   const discoveredFish = getDiscoveredFish(appState.inventory);
-  const craftableRecipes = getCraftableRecipesForInventory(inventoryFish, discoveredFish, currentMasterRecipes);
+  const craftableRecipes = getCraftableRecipesForInventory(inventoryFish, discoveredFish, currentMasterRecipes)
+    .map((recipe) => {
+      const hasRequiredFish = recipe.currentFishQuantity >= recipe.requiredFishQuantity;
+      const canAfford = appState.economy.balance >= recipe.craftCost;
+      const missingRequiredFishCount = Math.max(0, recipe.requiredFishQuantity - recipe.currentFishQuantity);
+      const missingBalanceAmount = Number(Math.max(0, recipe.craftCost - appState.economy.balance).toFixed(2));
+
+      return {
+        ...recipe,
+        hasRequiredFish,
+        canAfford,
+        isCraftable: hasRequiredFish && canAfford,
+        missingRequiredFishCount,
+        missingBalanceAmount,
+        availabilityLabel: !hasRequiredFish
+          ? `Need ${missingRequiredFishCount} more ${recipe.requiredFishName}`
+          : canAfford
+            ? "Ready to cook"
+            : `Need $${missingBalanceAmount.toFixed(2)} more`,
+      };
+    })
+    .sort((left, right) => {
+      if (left.isCraftable !== right.isCraftable) {
+        return left.isCraftable ? -1 : 1;
+      }
+
+      return left.name.localeCompare(right.name);
+    });
   setRecipeBookRecipes(appState.shop.recipeBook, craftableRecipes);
 
   if (!appState.shop.recipeBook.isOpen) {
@@ -697,6 +873,50 @@ function refreshCraftableRecipes(): void {
   }
 
   renderRecipeBook(appState.shop.recipeBook, shopDomRefs);
+}
+
+function cookSelectedRecipe(): void {
+  const selectedRecipe = getSelectedRecipe(appState.shop.recipeBook);
+  if (!selectedRecipe || !selectedRecipe.isCraftable) {
+    return;
+  }
+
+  if (appState.economy.balance < selectedRecipe.craftCost) {
+    showCraftToast(`You need $${selectedRecipe.craftCost.toFixed(2)} to cook ${selectedRecipe.name}.`);
+    refreshCraftableRecipes();
+    return;
+  }
+
+  const normalizedRequiredName = normalizeInventoryFishName(selectedRecipe.requiredFishName);
+  const normalizedScientificName = normalizeInventoryFishName(selectedRecipe.requiredFishScientificName);
+  const removedFishCount = removeFishFromInventory(
+    appState.inventory,
+    (fish) => {
+      const candidateNames = [normalizeInventoryFishName(fish.name), normalizeInventoryFishName(fish.scientificName)];
+      return candidateNames.includes(normalizedRequiredName) || (normalizedScientificName !== "" && candidateNames.includes(normalizedScientificName));
+    },
+    selectedRecipe.requiredFishQuantity,
+  );
+
+  if (removedFishCount < selectedRecipe.requiredFishQuantity) {
+    refreshCraftableRecipes();
+    renderInventoryUi();
+    return;
+  }
+
+  changeBalance(-selectedRecipe.craftCost, `Cooked ${selectedRecipe.name}`);
+
+  const cookedFood = createCookedFoodFromRecipe(selectedRecipe);
+  const addResult = tryAddFoodToInventory(appState.inventory, cookedFood);
+  if (!addResult.added) {
+    console.warn(`Cooked ${selectedRecipe.name} but could not add it to inventory because the bag is full.`);
+    showCraftToast(`Cooked ${selectedRecipe.name}, but the bag is full.`);
+  } else {
+    showCraftToast(`${selectedRecipe.name} was cooked and added to your bag.`);
+  }
+
+  refreshCraftableRecipes();
+  renderInventoryUi();
 }
 
 async function maybeGenerateRecipesForCaughtFish(fishName: string): Promise<void> {
@@ -776,6 +996,12 @@ function updateInteractionPromptVisibility(): void {
     return;
   }
 
+  if (isPlayerNearSaleTable(appState.base, appState.shop.saleTable)) {
+    workstationPromptEl.textContent = "Press E to manage sale table";
+    workstationPromptEl.classList.remove("is-hidden");
+    return;
+  }
+
   workstationPromptEl.classList.add("is-hidden");
 }
 
@@ -785,14 +1011,15 @@ function renderStatusReadout(): void {
     appState.base,
     {
       fps: appState.fps,
-      fishingPhase: appState.base.currentSceneId === "ocean" ? appState.fishing.session.phase : null,
-      fishingTension: appState.base.currentSceneId === "ocean" ? appState.fishing.session.tension : null,
-      inventoryUsedSlots: getInventoryUsedSlots(appState.inventory),
-      inventoryTotalSlots: appState.inventory.slots.length,
-      fishingHabitat: appState.base.currentSceneId === "ocean" ? getHabitatNameById(appState.travel.selectedHabitatId) : null,
-    },
-    GAME_CONFIG.debugMode,
-  );
+        fishingPhase: appState.base.currentSceneId === "ocean" ? appState.fishing.session.phase : null,
+        fishingTension: appState.base.currentSceneId === "ocean" ? appState.fishing.session.tension : null,
+        inventoryUsedSlots: getInventoryUsedSlots(appState.inventory),
+        inventoryTotalSlots: appState.inventory.slots.length,
+        balance: appState.economy.balance,
+        fishingHabitat: appState.base.currentSceneId === "ocean" ? getHabitatNameById(appState.travel.selectedHabitatId) : null,
+      },
+      GAME_CONFIG.debugMode,
+    );
 }
 
 function createOceanHabitatRoutes(): OceanHabitatRoute[] {
@@ -1102,5 +1329,295 @@ function syncFishingStatusForActiveHabitat(): void {
     return;
   }
 
-  appState.fishing.session.statusText = "Uncharted waters. Click open water to cast.";
+  appState.fishing.session.statusText = `Uncharted waters. Click open water to cast. Each cast costs $${CAST_COST}.`;
+}
+
+function maybeChargeForCast(worldPoint: Vector2): void {
+  if (appState.base.currentSceneId !== "ocean" || appState.fishing.session.phase !== "idle") {
+    return;
+  }
+
+  const tileX = Math.floor(worldPoint.x / BASE_CONSTANTS.TILE_SIZE);
+  const tileY = Math.floor(worldPoint.y / BASE_CONSTANTS.TILE_SIZE);
+  const tileKind = getTileKind(appState.base.sceneTerrains, "ocean", tileX, tileY);
+  if (tileKind !== "water") {
+    return;
+  }
+
+  changeBalance(-CAST_COST, "Cast the fishing line");
+}
+
+function changeBalance(delta: number, reason: string): void {
+  const nextBalance = Number((appState.economy.balance + delta).toFixed(2));
+  appState.economy.balance = nextBalance;
+  renderBalanceHud();
+  showMoneyDelta(delta, reason);
+  refreshCraftableRecipes();
+
+  if (appState.economy.balance <= appState.economy.bankruptcyThreshold) {
+    triggerBankruptcy();
+  }
+}
+
+function renderBalanceHud(): void {
+  balanceDisplayEl.textContent = `Balance: ${formatMoney(appState.economy.balance)}`;
+  gameOverOverlayEl.classList.toggle("is-hidden", !appState.economy.isGameOver);
+  gameOverOverlayEl.setAttribute("aria-hidden", String(!appState.economy.isGameOver));
+}
+
+function showMoneyDelta(delta: number, reason: string): void {
+  const entryEl = document.createElement("p");
+  entryEl.className = `money-delta ${delta >= 0 ? "is-positive" : "is-negative"}`;
+  entryEl.textContent = `${delta >= 0 ? "+" : "-"}${formatMoney(Math.abs(delta))} • ${reason}`;
+  moneyDeltaStackEl.prepend(entryEl);
+  window.setTimeout(() => {
+    entryEl.remove();
+  }, 2400);
+}
+
+function formatMoney(value: number): string {
+  const sign = value < 0 ? "-" : "";
+  return `${sign}$${Math.abs(value).toFixed(2)}`;
+}
+
+function triggerBankruptcy(): void {
+  if (appState.economy.isGameOver) {
+    return;
+  }
+
+  appState.economy.isGameOver = true;
+  appState.keysDown.clear();
+  appState.fishing.isReelHeld = false;
+  closeOceanMap();
+  closeRecipeBookOverlay();
+  closeInventory();
+  renderBalanceHud();
+  showCraftToast("You filed for bankruptcy.");
+}
+
+function showCraftToast(message: string): void {
+  craftToastEl.textContent = message;
+  craftToastEl.classList.remove("is-hidden");
+
+  const token = String(Date.now());
+  craftToastEl.dataset.toastToken = token;
+  window.setTimeout(() => {
+    if (craftToastEl.dataset.toastToken !== token) {
+      return;
+    }
+
+    craftToastEl.classList.add("is-hidden");
+  }, 2400);
+}
+
+function normalizeInventoryFishName(value: string | null | undefined): string {
+  return (value ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function updateCustomers(dt: number): void {
+  appState.shop.gameElapsedSeconds += dt;
+  const customer = appState.shop.customer;
+
+  if (!customer.isActive) {
+    appState.shop.customerSpawnTimer -= dt;
+    if (appState.shop.customerSpawnTimer <= 0) {
+      spawnCustomer();
+      appState.shop.customerSpawnTimer = getCustomerSpawnInterval();
+    }
+    return;
+  }
+
+  if (customer.state === "arriving") {
+    moveCustomerTowards(getCustomerSellTarget(), dt);
+    if (isCustomerAtTarget(getCustomerSellTarget())) {
+      customer.state = "waiting";
+      customer.patienceRemaining = CUSTOMER_PATIENCE_SECONDS;
+      customer.purchaseTimer = CUSTOMER_PURCHASE_DELAY;
+    }
+    return;
+  }
+
+  if (customer.state === "waiting") {
+    if (getSaleTableItems().length > 0) {
+      customer.state = "buying";
+      customer.purchaseTimer = CUSTOMER_PURCHASE_DELAY;
+      return;
+    }
+
+    customer.patienceRemaining -= dt;
+    if (customer.patienceRemaining <= 0) {
+      changeBalance(-CUSTOMER_EMPTY_PENALTY, "Customer left with no items to buy");
+      customer.state = "leaving";
+    }
+    return;
+  }
+
+  if (customer.state === "buying") {
+    if (getSaleTableItems().length === 0) {
+      customer.state = "waiting";
+      return;
+    }
+
+    customer.purchaseTimer -= dt;
+    if (customer.purchaseTimer <= 0) {
+      completeCustomerPurchase();
+      customer.state = "leaving";
+    }
+    return;
+  }
+
+  moveCustomerTowards(getCustomerExitTarget(), dt);
+  if (isCustomerAtTarget(getCustomerExitTarget())) {
+    resetCustomer();
+  }
+}
+
+function spawnCustomer(): void {
+  const entry = getCustomerEntryTarget();
+  appState.shop.customer = {
+    isActive: true,
+    x: entry.x,
+    y: entry.y,
+    state: "arriving",
+    patienceRemaining: CUSTOMER_PATIENCE_SECONDS,
+    purchaseTimer: CUSTOMER_PURCHASE_DELAY,
+  };
+}
+
+function resetCustomer(): void {
+  appState.shop.customer.isActive = false;
+  appState.shop.customer.state = "arriving";
+  appState.shop.customer.patienceRemaining = CUSTOMER_PATIENCE_SECONDS;
+  appState.shop.customer.purchaseTimer = 0;
+}
+
+function getCustomerSpawnInterval(): number {
+  return Math.max(6, 20 - Math.floor(appState.shop.gameElapsedSeconds / 45) * 2);
+}
+
+function getCustomerEntryTarget(): CustomerTarget {
+  const tile = BASE_CONSTANTS.TILE_SIZE;
+  const laneX = appState.shop.saleTable.tileX * tile + tile / 2;
+  return {
+    x: laneX,
+    y: 26 * tile + tile / 2,
+  };
+}
+
+function getCustomerExitTarget(): CustomerTarget {
+  return getCustomerEntryTarget();
+}
+
+function getCustomerSellTarget(): CustomerTarget {
+  const tile = BASE_CONSTANTS.TILE_SIZE;
+  return {
+    x: appState.shop.saleTable.tileX * tile + tile / 2,
+    y: appState.shop.saleTable.tileY * tile + tile * 0.65,
+  };
+}
+
+function moveCustomerTowards(target: CustomerTarget, dt: number): void {
+  const customer = appState.shop.customer;
+  customer.x = target.x;
+  const dy = target.y - customer.y;
+  const distance = Math.abs(dy);
+  if (distance <= 0.001) {
+    customer.y = target.y;
+    return;
+  }
+
+  const step = Math.min(distance, CUSTOMER_SPEED * dt);
+  customer.y += Math.sign(dy) * step;
+}
+
+function isCustomerAtTarget(target: CustomerTarget): boolean {
+  const customer = appState.shop.customer;
+  return Math.abs(target.y - customer.y) < 4;
+}
+
+function completeCustomerPurchase(): void {
+  const saleItems = getSaleTableItems();
+  if (saleItems.length === 0) {
+    return;
+  }
+
+  const chosenSaleItem = saleItems[Math.floor(Math.random() * saleItems.length)];
+  const soldItem = removeItemFromSlotsByIndex(appState.shop.saleTableSlots, chosenSaleItem.slotIndex);
+  if (!soldItem) {
+    return;
+  }
+
+  changeBalance(soldItem.value, `${soldItem.name} sold`);
+  showCraftToast(`Customer bought ${soldItem.name} for ${formatMoney(soldItem.value)}.`);
+
+  if (appState.inventory.isOpen) {
+    renderInventoryUi();
+  }
+}
+
+function drawCustomer(targetCtx: CanvasRenderingContext2D): void {
+  const customer = appState.shop.customer;
+  if (!customer.isActive || appState.base.currentSceneId !== "shop") {
+    return;
+  }
+
+  const screenPoint = toScreenPoint(appState.base, { x: customer.x, y: customer.y });
+  const bodyRadius = Math.round(7 * BASE_CONSTANTS.GLOBAL_SCALE);
+
+  targetCtx.fillStyle = "#f2d2b6";
+  targetCtx.beginPath();
+  targetCtx.arc(screenPoint.x, screenPoint.y - bodyRadius * 1.7, bodyRadius * 0.72, 0, Math.PI * 2);
+  targetCtx.fill();
+
+  targetCtx.fillStyle = customer.state === "buying" ? "#4d8bc7" : "#b5644c";
+  targetCtx.fillRect(screenPoint.x - bodyRadius, screenPoint.y - bodyRadius, bodyRadius * 2, bodyRadius * 2.4);
+
+  if (customer.state === "waiting" && getSaleTableItems().length === 0) {
+    const barWidth = Math.round(44 * BASE_CONSTANTS.GLOBAL_SCALE);
+    const barHeight = Math.max(4, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE));
+    const x = screenPoint.x - barWidth / 2;
+    const y = screenPoint.y - bodyRadius * 3.1;
+    const ratio = clamp(customer.patienceRemaining / CUSTOMER_PATIENCE_SECONDS, 0, 1);
+
+    targetCtx.fillStyle = "rgba(20, 15, 14, 0.8)";
+    targetCtx.fillRect(x, y, barWidth, barHeight);
+    targetCtx.fillStyle = ratio > 0.4 ? "#71cf7a" : "#d76f53";
+    targetCtx.fillRect(x, y, barWidth * ratio, barHeight);
+    targetCtx.strokeStyle = "rgba(255, 245, 223, 0.8)";
+    targetCtx.strokeRect(x, y, barWidth, barHeight);
+  }
+}
+
+function updateWorldMarkers(): void {
+  updateWorldMarker(cookMarkerEl, appState.shop.workstation.tileX, appState.shop.workstation.tileY - 1.1, "shop");
+  updateWorldMarker(sellMarkerEl, appState.shop.saleTable.tileX, appState.shop.saleTable.tileY - 0.8, "shop");
+}
+
+function updateWorldMarker(markerEl: HTMLElement, tileX: number, tileY: number, sceneId: SceneId): void {
+  if (appState.base.currentSceneId !== sceneId || appState.travel.isMapOpen) {
+    markerEl.classList.add("is-hidden");
+    return;
+  }
+
+  const worldPoint = {
+    x: tileX * BASE_CONSTANTS.TILE_SIZE + BASE_CONSTANTS.TILE_SIZE / 2,
+    y: tileY * BASE_CONSTANTS.TILE_SIZE + BASE_CONSTANTS.TILE_SIZE / 2,
+  };
+  const screenPoint = toScreenPoint(appState.base, worldPoint);
+  const onscreen =
+    screenPoint.x >= -24 &&
+    screenPoint.x <= BASE_CONSTANTS.RENDER_WIDTH + 24 &&
+    screenPoint.y >= -24 &&
+    screenPoint.y <= BASE_CONSTANTS.RENDER_HEIGHT + 24;
+
+  markerEl.classList.toggle("is-hidden", !onscreen);
+  if (!onscreen) {
+    return;
+  }
+
+  const canvasRect = canvas.getBoundingClientRect();
+  const scaleX = canvasRect.width / canvas.width;
+  const scaleY = canvasRect.height / canvas.height;
+  markerEl.style.left = `${canvasRect.left + screenPoint.x * scaleX}px`;
+  markerEl.style.top = `${canvasRect.top + screenPoint.y * scaleY}px`;
 }

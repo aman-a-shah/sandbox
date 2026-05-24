@@ -69,6 +69,7 @@ export interface BaseStatusSnapshot {
   fishingTension: number | null;
   inventoryUsedSlots: number;
   inventoryTotalSlots: number;
+  balance?: number | null;
   fishingHabitat?: string | null;
 }
 

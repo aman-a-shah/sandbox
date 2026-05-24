@@ -18,7 +18,7 @@
     ]
   },
   "notes": {
-    "likelyCatchPercent": "Normalized proxy based on MarLIN habitat fit plus FishBase depth, habitat text, size, and fishery-use cues across the returned fish set.",
+    "likelyCatchPercent": "Contrast-amplified normalized proxy based on MarLIN habitat fit plus FishBase depth, habitat text, size, and fishery-use cues across the returned fish set. Values are widened so each habitat has clearer common and legendary catches and still sum to 100%.",
     "observedSpeciesRecordPercent": "Normalized proxy based on habitat fit weighted by WoRMS distribution record counts, with a small FishBase depth-data bonus when available.",
     "fishingActivityAssociatedPercent": "Normalized proxy based on habitat fit, FishBase fishery-use and environment cues, fish mobility/environment traits, and habitat accessibility. This is not a direct Global Fishing Watch species measurement.",
     "sourceApis": [
@@ -51,7 +51,7 @@
         "Scheldt estuary"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 8.63,
+      "likelyCatchPercent": 8.17,
       "observedSpeciesRecordPercent": 11.08,
       "fishingActivityAssociatedPercent": 8.85
     },
@@ -76,7 +76,7 @@
         "Black Sea"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 8,
+      "likelyCatchPercent": 5.95,
       "observedSpeciesRecordPercent": 8.69,
       "fishingActivityAssociatedPercent": 7.67
     },
@@ -101,7 +101,7 @@
         "North East Atlantic"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 9.25,
+      "likelyCatchPercent": 19.15,
       "observedSpeciesRecordPercent": 9.32,
       "fishingActivityAssociatedPercent": 8.18
     },
@@ -126,7 +126,7 @@
         "Swedish Exclusive Economic Zone"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 9.25,
+      "likelyCatchPercent": 16.87,
       "observedSpeciesRecordPercent": 4.56,
       "fishingActivityAssociatedPercent": 8.18
     },
@@ -151,7 +151,7 @@
         "Westerschelde"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 8,
+      "likelyCatchPercent": 4.83,
       "observedSpeciesRecordPercent": 8.44,
       "fishingActivityAssociatedPercent": 8.35
     },
@@ -176,7 +176,7 @@
         "Belgian Exclusive Economic Zone"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 9.25,
+      "likelyCatchPercent": 14.74,
       "observedSpeciesRecordPercent": 10.83,
       "fishingActivityAssociatedPercent": 8.85
     },
@@ -201,7 +201,7 @@
         "British Isles"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 9.25,
+      "likelyCatchPercent": 12.75,
       "observedSpeciesRecordPercent": 8.69,
       "fishingActivityAssociatedPercent": 8.6
     },
@@ -226,7 +226,7 @@
         "European waters (ERMS scope)"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 7,
+      "likelyCatchPercent": 3.04,
       "observedSpeciesRecordPercent": 7.23,
       "fishingActivityAssociatedPercent": 7.34
     },
@@ -251,7 +251,7 @@
         "Oosterschelde"
       ],
       "habitatFitPercent": 56,
-      "likelyCatchPercent": 8.83,
+      "likelyCatchPercent": 10.07,
       "observedSpeciesRecordPercent": 8.44,
       "fishingActivityAssociatedPercent": 8.6
     },
@@ -276,7 +276,7 @@
         "Belgian Exclusive Economic Zone"
       ],
       "habitatFitPercent": 34,
-      "likelyCatchPercent": 5.56,
+      "likelyCatchPercent": 0.75,
       "observedSpeciesRecordPercent": 4.92,
       "fishingActivityAssociatedPercent": 6.49
     },
@@ -301,7 +301,7 @@
         "Westerschelde"
       ],
       "habitatFitPercent": 34,
-      "likelyCatchPercent": 6.5,
+      "likelyCatchPercent": 2.04,
       "observedSpeciesRecordPercent": 6.73,
       "fishingActivityAssociatedPercent": 6.75
     },
@@ -326,7 +326,7 @@
         "Belgian Exclusive Economic Zone"
       ],
       "habitatFitPercent": 32,
-      "likelyCatchPercent": 6.25,
+      "likelyCatchPercent": 1.37,
       "observedSpeciesRecordPercent": 4.67,
       "fishingActivityAssociatedPercent": 6.83
     },
@@ -351,7 +351,7 @@
         "Westerschelde"
       ],
       "habitatFitPercent": 32,
-      "likelyCatchPercent": 4.23,
+      "likelyCatchPercent": 0.27,
       "observedSpeciesRecordPercent": 6.4,
       "fishingActivityAssociatedPercent": 5.31
     }
