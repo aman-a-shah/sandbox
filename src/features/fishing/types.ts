@@ -16,6 +16,8 @@ export interface FishingSession {
   fishPullTimer: number;
   burstStrength: number;
   tension: number;
+  greenZoneStart: number;
+  greenZoneEnd: number;
   catchProgress: number;
   statusText: string;
 }

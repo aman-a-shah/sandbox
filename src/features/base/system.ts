@@ -139,6 +139,39 @@ export function drawSceneBackgroundAndGrid(renderCtx: CanvasRenderingContext2D, 
   renderCtx.strokeRect(-state.camera.x, -state.camera.y, worldWidthPx, worldHeightPx);
 }
 
+export function drawCollisionDebugBoxes(renderCtx: CanvasRenderingContext2D, state: BaseState, debugMode: boolean): void {
+  if (!debugMode || state.currentSceneId !== "shop") {
+    return;
+  }
+
+  const scene = state.scenes[state.currentSceneId];
+  const tile = BASE_CONSTANTS.TILE_SIZE;
+  const startCol = Math.max(0, Math.floor(state.camera.x / tile));
+  const endCol = Math.min(scene.worldCols - 1, Math.ceil((state.camera.x + state.camera.width) / tile) - 1);
+  const startRow = Math.max(0, Math.floor(state.camera.y / tile));
+  const endRow = Math.min(scene.worldRows - 1, Math.ceil((state.camera.y + state.camera.height) / tile) - 1);
+
+  renderCtx.save();
+  renderCtx.fillStyle = "rgba(255, 81, 81, 0.18)";
+  renderCtx.strokeStyle = "rgba(255, 112, 112, 0.95)";
+  renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
+
+  for (let y = startRow; y <= endRow; y += 1) {
+    for (let x = startCol; x <= endCol; x += 1) {
+      if (isWalkableTile(state.sceneTerrains, state.currentSceneId, x, y)) {
+        continue;
+      }
+
+      const screenX = x * tile - state.camera.x;
+      const screenY = y * tile - state.camera.y;
+      renderCtx.fillRect(screenX, screenY, tile, tile);
+      renderCtx.strokeRect(screenX, screenY, tile, tile);
+    }
+  }
+
+  renderCtx.restore();
+}
+
 export function drawPlayer(renderCtx: CanvasRenderingContext2D, state: BaseState): void {
   drawPixelPlayer(renderCtx, state);
 }

@@ -14,6 +14,8 @@ export function createInitialFishingSession(): FishingSession {
     fishPullTimer: 0,
     burstStrength: 0,
     tension: 0,
+    greenZoneStart: 0.35,
+    greenZoneEnd: 0.57,
     catchProgress: 0,
     statusText: "Click open water to cast.",
   };

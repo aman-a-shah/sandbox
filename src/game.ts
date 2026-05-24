@@ -15,6 +15,7 @@ import {
   BASE_CONSTANTS,
   centerCameraOnPlayer,
   createBaseState,
+  drawCollisionDebugBoxes,
   drawMiniMap,
   drawPlayer,
   drawSceneBackgroundAndGrid,
@@ -46,7 +47,7 @@ import {
   tryAddFishToInventory,
 } from "./features/inventory";
 import type { InventoryDomRefs } from "./features/inventory";
-import { closeRecipeBook, createShopState, drawWorkstation, getRecipeBookPageCount, isPlayerNearWorkstation, openRecipeBook, renderRecipeBook, setRecipeBookRecipes, updateWorkstationPrompt } from "./features/shop";
+import { closeRecipeBook, createShopState, drawWorkstation, getRecipeBookPageCount, isPlayerNearWorkstation, openRecipeBook, renderRecipeBook, setRecipeBookRecipes } from "./features/shop";
 import type { ShopDomRefs } from "./features/shop";
 
 interface ExpandedMapLayout {
@@ -66,8 +67,134 @@ interface OceanHabitatRoute {
   jsonPath: string;
   depthZone: string | null;
   substratum: string[];
-  mapPoint: Vector2;
 }
+
+interface OceanHabitatRegion {
+  routeId: string;
+  circles: OceanHabitatBlobCircle[];
+  centroid: Vector2;
+  debugColor: string;
+}
+
+interface OceanHabitatBlobCircle {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+interface OceanChartGeometry {
+  centerX: number;
+  centerY: number;
+  islandRadiusX: number;
+  islandRadiusY: number;
+}
+
+interface TravelDebugSettings {
+  showHabitatRegionDebug: boolean;
+}
+
+interface SelectedHabitatDebugSnapshot {
+  id: string;
+  name: string;
+}
+
+interface GameDebugControls {
+  setHabitatRegionDebug: (enabled: boolean) => boolean;
+  toggleHabitatRegionDebug: () => boolean;
+  getState: () => TravelDebugSettings;
+  getSelectedHabitatId: () => string | null;
+  getSelectedHabitat: () => SelectedHabitatDebugSnapshot | null;
+}
+
+declare global {
+  interface Window {
+    gameDebug?: GameDebugControls;
+  }
+}
+
+const OCEAN_REGION_DEBUG_COLORS = [
+  "#4cb26f",
+  "#4f9fd1",
+  "#c97957",
+  "#8b7be0",
+  "#f0b451",
+  "#49b6b1",
+  "#cf69a1",
+];
+
+const OCEAN_HABITAT_BLOB_LAYOUT: Array<{
+  circles: OceanHabitatBlobCircle[];
+  centroid: Vector2;
+}> = [
+  {
+    circles: [
+      { x: 0.2, y: 0.2, radius: 0.09 },
+      { x: 0.25, y: 0.18, radius: 0.06 },
+      { x: 0.17, y: 0.25, radius: 0.05 },
+      { x: 0.24, y: 0.25, radius: 0.045 },
+    ],
+    centroid: { x: 0.215, y: 0.215 },
+  },
+  {
+    circles: [
+      { x: 0.5, y: 0.14, radius: 0.085 },
+      { x: 0.45, y: 0.17, radius: 0.055 },
+      { x: 0.56, y: 0.16, radius: 0.05 },
+      { x: 0.5, y: 0.22, radius: 0.045 },
+    ],
+    centroid: { x: 0.5, y: 0.165 },
+  },
+  {
+    circles: [
+      { x: 0.79, y: 0.27, radius: 0.095 },
+      { x: 0.74, y: 0.24, radius: 0.06 },
+      { x: 0.83, y: 0.23, radius: 0.05 },
+      { x: 0.81, y: 0.33, radius: 0.045 },
+      { x: 0.74, y: 0.31, radius: 0.042 },
+    ],
+    centroid: { x: 0.785, y: 0.275 },
+  },
+  {
+    circles: [
+      { x: 0.84, y: 0.63, radius: 0.1 },
+      { x: 0.79, y: 0.58, radius: 0.06 },
+      { x: 0.87, y: 0.56, radius: 0.048 },
+      { x: 0.81, y: 0.72, radius: 0.055 },
+      { x: 0.88, y: 0.69, radius: 0.043 },
+    ],
+    centroid: { x: 0.835, y: 0.63 },
+  },
+  {
+    circles: [
+      { x: 0.56, y: 0.84, radius: 0.102 },
+      { x: 0.48, y: 0.8, radius: 0.055 },
+      { x: 0.64, y: 0.8, radius: 0.05 },
+      { x: 0.52, y: 0.91, radius: 0.05 },
+      { x: 0.62, y: 0.9, radius: 0.044 },
+    ],
+    centroid: { x: 0.56, y: 0.845 },
+  },
+  {
+    circles: [
+      { x: 0.23, y: 0.75, radius: 0.098 },
+      { x: 0.17, y: 0.7, radius: 0.056 },
+      { x: 0.3, y: 0.71, radius: 0.05 },
+      { x: 0.19, y: 0.83, radius: 0.05 },
+      { x: 0.29, y: 0.81, radius: 0.042 },
+    ],
+    centroid: { x: 0.23, y: 0.755 },
+  },
+  {
+    circles: [
+      { x: 0.11, y: 0.47, radius: 0.088 },
+      { x: 0.08, y: 0.39, radius: 0.05 },
+      { x: 0.17, y: 0.43, radius: 0.048 },
+      { x: 0.1, y: 0.56, radius: 0.053 },
+      { x: 0.16, y: 0.53, radius: 0.04 },
+    ],
+    centroid: { x: 0.11, y: 0.475 },
+  },
+];
 
 const canvas = mustGetElement<HTMLCanvasElement>("game-canvas");
 const renderCtx = mustGet2DContext(canvas);
@@ -115,6 +242,12 @@ const shopDomRefs: ShopDomRefs = {
 };
 
 const oceanHabitatRoutes = createOceanHabitatRoutes();
+const oceanHabitatRoutesById = new Map(oceanHabitatRoutes.map((route) => [route.id, route]));
+const oceanHabitatRegions = createOceanHabitatRegions();
+const oceanHabitatRegionsByRouteId = new Map(oceanHabitatRegions.map((region) => [region.routeId, region]));
+const travelDebugState: TravelDebugSettings = {
+  showHabitatRegionDebug: false,
+};
 const baseState = createBaseState();
 
 const appState: AppState = {
@@ -130,6 +263,7 @@ const appState: AppState = {
 
 let currentMasterRecipes = getDefaultMasterRecipes();
 const pendingRecipeGenerations = new Set<string>();
+attachDebugConsoleControls();
 
 document.documentElement.style.setProperty("--global-scale", String(BASE_CONSTANTS.GLOBAL_SCALE));
 
@@ -152,7 +286,7 @@ renderStatusReadout();
 syncInventoryOverlay(inventoryDomRefs, appState.inventory);
 renderInventory(inventoryDomRefs, appState.inventory);
 renderRecipeBook(appState.shop.recipeBook, shopDomRefs);
-updateWorkstationPromptVisibility();
+updateInteractionPromptVisibility();
 
 window.addEventListener("keydown", (event: KeyboardEvent) => {
   const key = event.key.toLowerCase();
@@ -176,6 +310,9 @@ window.addEventListener("keydown", (event: KeyboardEvent) => {
   }
 
   if (key === "e") {
+    if (tryOpenOceanMapFromDock()) {
+      return;
+    }
     tryOpenRecipeBookFromWorkstation();
   }
 });
@@ -280,7 +417,7 @@ function update(dt: number): void {
     },
   });
   syncFishingStatusForActiveHabitat();
-  updateWorkstationPromptVisibility();
+  updateInteractionPromptVisibility();
 
   updateCamera(appState.base);
   renderStatusReadout();
@@ -295,6 +432,7 @@ function render(): void {
     getRodOriginWorld,
   });
   drawWorkstation(renderCtx, appState.base.currentSceneId, appState.shop.workstation, appState.base.camera);
+  drawCollisionDebugBoxes(renderCtx, appState.base, GAME_CONFIG.debugMode);
   drawPlayer(renderCtx, appState.base);
   drawMiniMap(renderCtx, appState.base);
   drawFishingHud(renderCtx, appState.fishing, appState.base.currentSceneId);
@@ -311,14 +449,6 @@ function handleCanvasClick(event: MouseEvent): void {
 
   if (isBlockingOverlayOpen()) {
     return;
-  }
-
-  if (appState.base.currentSceneId === "island") {
-    const clickWorldPoint = toWorldPoint(appState.base, clickScreenPoint);
-    if (isPointInsideRect(clickWorldPoint, appState.travel.dockRect)) {
-      openOceanMap();
-      return;
-    }
   }
 
   const minimapSceneId = getSceneIdFromMinimapClick(clickScreenPoint);
@@ -359,11 +489,11 @@ function handleOceanMapClick(clickScreenPoint: Vector2): void {
     return;
   }
 
-  const normalizedPoint = {
-    x: (clickScreenPoint.x - layout.chartX) / layout.chartWidth,
-    y: (clickScreenPoint.y - layout.chartY) / layout.chartHeight,
-  };
-  const selectedHabitat = resolveOceanHabitatFromMapPoint(normalizedPoint);
+  const selectedHabitat = resolveOceanHabitatFromChartPoint(clickScreenPoint, layout);
+  if (!selectedHabitat) {
+    return;
+  }
+
   appState.travel.selectedHabitatId = selectedHabitat.id;
   closeOceanMap();
   switchScene("ocean");
@@ -390,7 +520,7 @@ function openInventory(): void {
   refreshCraftableRecipes();
   syncInventoryOverlay(inventoryDomRefs, appState.inventory);
   renderInventory(inventoryDomRefs, appState.inventory);
-  updateWorkstationPromptVisibility();
+  updateInteractionPromptVisibility();
 }
 
 function closeInventory(): void {
@@ -400,7 +530,16 @@ function closeInventory(): void {
 
   setInventoryOpen(appState.inventory, false);
   syncInventoryOverlay(inventoryDomRefs, appState.inventory);
-  updateWorkstationPromptVisibility();
+  updateInteractionPromptVisibility();
+}
+
+function tryOpenOceanMapFromDock(): boolean {
+  if (!isPlayerOnDock()) {
+    return false;
+  }
+
+  openOceanMap();
+  return true;
 }
 
 function tryOpenRecipeBookFromWorkstation(): void {
@@ -421,7 +560,7 @@ function openRecipeBookOverlay(): void {
   refreshCraftableRecipes();
   openRecipeBook(appState.shop.recipeBook, shopDomRefs);
   renderRecipeBook(appState.shop.recipeBook, shopDomRefs);
-  updateWorkstationPromptVisibility();
+  updateInteractionPromptVisibility();
 }
 
 function closeRecipeBookOverlay(): void {
@@ -430,7 +569,7 @@ function closeRecipeBookOverlay(): void {
   }
 
   closeRecipeBook(appState.shop.recipeBook, shopDomRefs);
-  updateWorkstationPromptVisibility();
+  updateInteractionPromptVisibility();
 }
 
 function openOceanMap(): void {
@@ -448,6 +587,50 @@ function closeOceanMap(): void {
   appState.travel.isMapOpen = false;
 }
 
+function getSelectedHabitatRoute(): OceanHabitatRoute | null {
+  const selectedHabitatId = appState.travel.selectedHabitatId;
+  if (selectedHabitatId) {
+    const selectedRoute = oceanHabitatRoutesById.get(selectedHabitatId);
+    if (selectedRoute) {
+      return selectedRoute;
+    }
+  }
+
+  return oceanHabitatRoutes[0] ?? null;
+}
+
+function cloneTravelDebugState(): TravelDebugSettings {
+  return {
+    showHabitatRegionDebug: travelDebugState.showHabitatRegionDebug,
+  };
+}
+
+function attachDebugConsoleControls(): void {
+  window.gameDebug = {
+    setHabitatRegionDebug: (enabled: boolean): boolean => {
+      travelDebugState.showHabitatRegionDebug = Boolean(enabled);
+      return travelDebugState.showHabitatRegionDebug;
+    },
+    toggleHabitatRegionDebug: (): boolean => {
+      travelDebugState.showHabitatRegionDebug = !travelDebugState.showHabitatRegionDebug;
+      return travelDebugState.showHabitatRegionDebug;
+    },
+    getState: (): TravelDebugSettings => cloneTravelDebugState(),
+    getSelectedHabitatId: (): string | null => getSelectedHabitatRoute()?.id ?? null,
+    getSelectedHabitat: (): SelectedHabitatDebugSnapshot | null => {
+      const selectedRoute = getSelectedHabitatRoute();
+      if (!selectedRoute) {
+        return null;
+      }
+
+      return {
+        id: selectedRoute.id,
+        name: selectedRoute.name,
+      };
+    },
+  };
+}
+
 function switchScene(sceneId: SceneId): void {
   if (appState.base.currentSceneId === "ocean" && sceneId !== "ocean") {
     resetFishingState(appState.fishing);
@@ -462,7 +645,7 @@ function switchScene(sceneId: SceneId): void {
   closeInventory();
   closeRecipeBookOverlay();
   syncFishingStatusForActiveHabitat();
-  updateWorkstationPromptVisibility();
+  updateInteractionPromptVisibility();
 }
 
 function getRodOriginWorld() {
@@ -568,13 +751,26 @@ async function hydrateMasterRecipes(): Promise<void> {
   }
 }
 
-function updateWorkstationPromptVisibility(): void {
-  updateWorkstationPrompt(
-    shopDomRefs.workstationPromptEl,
-    appState.shop.recipeBook,
-    appState.inventory.isOpen || appState.travel.isMapOpen,
-    isPlayerNearWorkstation(appState.base, appState.shop.workstation),
-  );
+function updateInteractionPromptVisibility(): void {
+  const hasBlockingOverlay = appState.shop.recipeBook.isOpen || appState.inventory.isOpen || appState.travel.isMapOpen;
+  if (hasBlockingOverlay) {
+    workstationPromptEl.classList.add("is-hidden");
+    return;
+  }
+
+  if (isPlayerOnDock()) {
+    workstationPromptEl.textContent = "Press E to open ocean chart";
+    workstationPromptEl.classList.remove("is-hidden");
+    return;
+  }
+
+  if (isPlayerNearWorkstation(appState.base, appState.shop.workstation)) {
+    workstationPromptEl.textContent = "Press E to open workstation";
+    workstationPromptEl.classList.remove("is-hidden");
+    return;
+  }
+
+  workstationPromptEl.classList.add("is-hidden");
 }
 
 function renderStatusReadout(): void {
@@ -595,62 +791,26 @@ function renderStatusReadout(): void {
 
 function createOceanHabitatRoutes(): OceanHabitatRoute[] {
   const habitats = getOceanHabitats();
-  const mapPoints = createNormalizedRoutePoints(habitats.length);
 
-  return habitats.map((habitat, index) => ({
+  return habitats.map((habitat) => ({
     id: habitat.id,
     name: habitat.name,
     jsonPath: habitat.jsonPath,
     depthZone: habitat.depthZone,
     substratum: [...habitat.substratum],
-    mapPoint: mapPoints[index] ?? { x: 0.5, y: 0.5 },
   }));
 }
 
-function createNormalizedRoutePoints(count: number): Vector2[] {
-  if (count <= 1) {
-    return [{ x: 0.66, y: 0.5 }];
-  }
-
-  const points: Vector2[] = [];
-  const centerX = 0.63;
-  const centerY = 0.5;
-  const radiusX = 0.28;
-  const radiusY = 0.34;
-
-  for (let index = 0; index < count; index += 1) {
-    const ratio = index / count;
-    const angle = -Math.PI / 2 + ratio * Math.PI * 2;
-    const wobbleX = Math.sin(index * 1.7) * 0.03;
-    const wobbleY = Math.cos(index * 2.1) * 0.03;
-    points.push({
-      x: clamp(centerX + Math.cos(angle) * radiusX + wobbleX, 0.14, 0.9),
-      y: clamp(centerY + Math.sin(angle) * radiusY + wobbleY, 0.12, 0.88),
-    });
-  }
-
-  return points;
-}
-
-function getActiveOceanHabitatRoute(): OceanHabitatRoute {
-  const selectedHabitatId = appState.travel.selectedHabitatId;
-  if (selectedHabitatId) {
-    const selectedRoute = oceanHabitatRoutes.find((route) => route.id === selectedHabitatId);
-    if (selectedRoute) {
-      return selectedRoute;
-    }
-  }
-
-  return (
-    oceanHabitatRoutes[0] ?? {
-      id: getDefaultHabitatId(),
-      name: getHabitatNameById(null),
-      jsonPath: getHabitatJsonPathById(null),
-      depthZone: null,
-      substratum: [],
-      mapPoint: { x: 0.5, y: 0.5 },
-    }
-  );
+function createOceanHabitatRegions(): OceanHabitatRegion[] {
+  return oceanHabitatRoutes.map((route, index) => {
+    const layout = OCEAN_HABITAT_BLOB_LAYOUT[index % OCEAN_HABITAT_BLOB_LAYOUT.length];
+    return {
+      routeId: route.id,
+      circles: layout.circles.map((circle) => ({ ...circle })),
+      centroid: { ...layout.centroid },
+      debugColor: OCEAN_REGION_DEBUG_COLORS[index % OCEAN_REGION_DEBUG_COLORS.length],
+    };
+  });
 }
 
 function createOceanTravelState(state: BaseState): OceanTravelState {
@@ -662,7 +822,7 @@ function createOceanTravelState(state: BaseState): OceanTravelState {
   const islandWorldHeight = islandScene.worldRows * tileSize;
   const defaultHabitatId = getDefaultHabitatId();
   const selectedHabitatId =
-    oceanHabitatRoutes.find((route) => route.id === defaultHabitatId)?.id ?? oceanHabitatRoutes[0]?.id ?? defaultHabitatId;
+    oceanHabitatRoutesById.get(defaultHabitatId)?.id ?? oceanHabitatRoutes[0]?.id ?? defaultHabitatId;
 
   return {
     isMapOpen: false,
@@ -685,13 +845,26 @@ function isPointInsideRect(point: Vector2, rect: WorldRect): boolean {
   );
 }
 
+function isPlayerOnDock(): boolean {
+  if (appState.base.currentSceneId !== "island") {
+    return false;
+  }
+
+  return isPointInsideRect(
+    {
+      x: appState.base.player.x,
+      y: appState.base.player.y,
+    },
+    appState.travel.dockRect,
+  );
+}
+
 function getExpandedMapLayout(): ExpandedMapLayout {
   const panelPadding = Math.max(1, Math.round(16 * BASE_CONSTANTS.GLOBAL_SCALE));
   const boxWidth = Math.max(1, Math.round(BASE_CONSTANTS.RENDER_WIDTH * 0.84));
   const boxHeight = Math.max(1, Math.round(BASE_CONSTANTS.RENDER_HEIGHT * 0.78));
   const boxX = Math.round((BASE_CONSTANTS.RENDER_WIDTH - boxWidth) / 2);
   const boxY = Math.round((BASE_CONSTANTS.RENDER_HEIGHT - boxHeight) / 2);
-  const sidePanelWidth = Math.max(1, Math.round(boxWidth * 0.33));
 
   return {
     boxX,
@@ -700,26 +873,89 @@ function getExpandedMapLayout(): ExpandedMapLayout {
     boxHeight,
     chartX: boxX + panelPadding,
     chartY: boxY + panelPadding,
-    chartWidth: boxWidth - panelPadding * 3 - sidePanelWidth,
+    chartWidth: boxWidth - panelPadding * 2,
     chartHeight: boxHeight - panelPadding * 2,
   };
 }
 
-function resolveOceanHabitatFromMapPoint(normalizedPoint: Vector2): OceanHabitatRoute {
-  let nearestRoute = getActiveOceanHabitatRoute();
-  let nearestDistance = Number.POSITIVE_INFINITY;
+function getOceanChartGeometry(layout: ExpandedMapLayout): OceanChartGeometry {
+  const centerX = layout.chartX + layout.chartWidth * 0.5;
+  const centerY = layout.chartY + layout.chartHeight * 0.5;
+  const islandRadiusX = Math.max(1, layout.chartWidth * 0.1);
+  const islandRadiusY = Math.max(1, layout.chartHeight * 0.12);
 
-  for (const route of oceanHabitatRoutes) {
-    const deltaX = normalizedPoint.x - route.mapPoint.x;
-    const deltaY = normalizedPoint.y - route.mapPoint.y;
-    const distance = Math.hypot(deltaX, deltaY);
-    if (distance < nearestDistance) {
-      nearestDistance = distance;
-      nearestRoute = route;
+  return {
+    centerX,
+    centerY,
+    islandRadiusX,
+    islandRadiusY,
+  };
+}
+
+function drawOceanHabitatBlobPath(layout: ExpandedMapLayout, circles: OceanHabitatBlobCircle[]): void {
+  const chartScale = Math.min(layout.chartWidth, layout.chartHeight);
+  renderCtx.beginPath();
+  for (const circle of circles) {
+    const centerX = layout.chartX + circle.x * layout.chartWidth;
+    const centerY = layout.chartY + circle.y * layout.chartHeight;
+    const radius = circle.radius * chartScale;
+    renderCtx.moveTo(centerX + radius, centerY);
+    renderCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  }
+}
+
+function isPointInsideIsland(point: Vector2, geometry: OceanChartGeometry): boolean {
+  const normalizedDeltaX = (point.x - geometry.centerX) / geometry.islandRadiusX;
+  const normalizedDeltaY = (point.y - geometry.centerY) / geometry.islandRadiusY;
+  return normalizedDeltaX * normalizedDeltaX + normalizedDeltaY * normalizedDeltaY <= 1;
+}
+
+function resolveOceanHabitatFromChartPoint(clickScreenPoint: Vector2, layout: ExpandedMapLayout): OceanHabitatRoute | null {
+  const geometry = getOceanChartGeometry(layout);
+  if (isPointInsideIsland(clickScreenPoint, geometry)) {
+    return null;
+  }
+
+  const chartScale = Math.min(layout.chartWidth, layout.chartHeight);
+  let strongestMatch: { routeId: string; score: number } | null = null;
+
+  for (const region of oceanHabitatRegionsByRouteId.values()) {
+    for (const circle of region.circles) {
+      const centerX = layout.chartX + circle.x * layout.chartWidth;
+      const centerY = layout.chartY + circle.y * layout.chartHeight;
+      const radius = circle.radius * chartScale;
+      const distance = Math.hypot(clickScreenPoint.x - centerX, clickScreenPoint.y - centerY);
+      if (distance > radius) {
+        continue;
+      }
+
+      const score = 1 - distance / Math.max(radius, 0.0001);
+      if (!strongestMatch || score > strongestMatch.score) {
+        strongestMatch = {
+          routeId: region.routeId,
+          score,
+        };
+      }
     }
   }
 
-  return nearestRoute;
+  if (strongestMatch) {
+    return oceanHabitatRoutesById.get(strongestMatch.routeId) ?? null;
+  }
+
+  let nearestFallbackRoute: OceanHabitatRoute | null = null;
+  let nearestFallbackDistance = Number.POSITIVE_INFINITY;
+  for (const region of oceanHabitatRegionsByRouteId.values()) {
+    const centroidX = layout.chartX + region.centroid.x * layout.chartWidth;
+    const centroidY = layout.chartY + region.centroid.y * layout.chartHeight;
+    const distance = Math.hypot(clickScreenPoint.x - centroidX, clickScreenPoint.y - centroidY);
+    if (distance < nearestFallbackDistance) {
+      nearestFallbackDistance = distance;
+      nearestFallbackRoute = oceanHabitatRoutesById.get(region.routeId) ?? null;
+    }
+  }
+
+  return nearestFallbackRoute;
 }
 
 function drawDockPlaceholder(): void {
@@ -751,7 +987,7 @@ function drawDockPlaceholder(): void {
   renderCtx.textAlign = "center";
   renderCtx.textBaseline = "bottom";
   renderCtx.fillText(
-    "Dock: click for chart",
+    "Dock: stand here + press E",
     dockTopLeft.x + dockRect.width / 2,
     dockTopLeft.y - Math.max(3, Math.round(4 * BASE_CONSTANTS.GLOBAL_SCALE)),
   );
@@ -763,148 +999,88 @@ function drawOceanMapOverlay(): void {
   }
 
   const layout = getExpandedMapLayout();
-  const panelPadding = Math.max(1, Math.round(16 * BASE_CONSTANTS.GLOBAL_SCALE));
-  const routeHub = {
-    x: layout.chartX + layout.chartWidth * 0.15,
-    y: layout.chartY + layout.chartHeight * 0.52,
-  };
-  const activeRoute = getActiveOceanHabitatRoute();
+  const geometry = getOceanChartGeometry(layout);
 
   renderCtx.fillStyle = "rgba(4, 9, 22, 0.75)";
   renderCtx.fillRect(0, 0, BASE_CONSTANTS.RENDER_WIDTH, BASE_CONSTANTS.RENDER_HEIGHT);
 
-  renderCtx.fillStyle = "rgba(8, 23, 40, 0.95)";
-  renderCtx.strokeStyle = "rgba(167, 203, 230, 0.7)";
+  renderCtx.fillStyle = "rgba(8, 23, 40, 0.96)";
+  renderCtx.strokeStyle = "rgba(167, 203, 230, 0.42)";
   renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
   renderCtx.fillRect(layout.boxX, layout.boxY, layout.boxWidth, layout.boxHeight);
   renderCtx.strokeRect(layout.boxX, layout.boxY, layout.boxWidth, layout.boxHeight);
 
-  renderCtx.fillStyle = "rgba(19, 53, 87, 0.95)";
+  renderCtx.fillStyle = "#4f98c9";
   renderCtx.fillRect(layout.chartX, layout.chartY, layout.chartWidth, layout.chartHeight);
-  renderCtx.strokeStyle = "rgba(164, 209, 255, 0.55)";
+
+  renderCtx.strokeStyle = "rgba(167, 203, 230, 0.36)";
   renderCtx.strokeRect(layout.chartX, layout.chartY, layout.chartWidth, layout.chartHeight);
 
-  renderCtx.strokeStyle = "rgba(152, 188, 220, 0.2)";
-  renderCtx.lineWidth = Math.max(1, Math.round(BASE_CONSTANTS.GLOBAL_SCALE));
-  for (let row = 1; row < 6; row += 1) {
-    const y = layout.chartY + (layout.chartHeight * row) / 6;
-    renderCtx.beginPath();
-    renderCtx.moveTo(layout.chartX, y);
-    renderCtx.lineTo(layout.chartX + layout.chartWidth, y);
-    renderCtx.stroke();
-  }
-  for (let column = 1; column < 8; column += 1) {
-    const x = layout.chartX + (layout.chartWidth * column) / 8;
-    renderCtx.beginPath();
-    renderCtx.moveTo(x, layout.chartY);
-    renderCtx.lineTo(x, layout.chartY + layout.chartHeight);
-    renderCtx.stroke();
-  }
-
-  renderCtx.fillStyle = "#ffe2ad";
-  renderCtx.strokeStyle = "#fff3d5";
-  renderCtx.beginPath();
-  renderCtx.arc(routeHub.x, routeHub.y, Math.max(3, Math.round(4 * BASE_CONSTANTS.GLOBAL_SCALE)), 0, Math.PI * 2);
-  renderCtx.fill();
-  renderCtx.stroke();
-
-  for (const route of oceanHabitatRoutes) {
-    const routePoint = {
-      x: layout.chartX + route.mapPoint.x * layout.chartWidth,
-      y: layout.chartY + route.mapPoint.y * layout.chartHeight,
-    };
-    const isActive = route.id === activeRoute.id;
-    const nodeRadius = isActive ? Math.max(5, Math.round(6 * BASE_CONSTANTS.GLOBAL_SCALE)) : Math.max(4, Math.round(5 * BASE_CONSTANTS.GLOBAL_SCALE));
-
-    renderCtx.strokeStyle = isActive ? "rgba(245, 245, 245, 0.95)" : "rgba(176, 211, 236, 0.6)";
-    renderCtx.lineWidth = isActive ? Math.max(1, Math.round(2 * BASE_CONSTANTS.GLOBAL_SCALE)) : Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
-    renderCtx.beginPath();
-    renderCtx.moveTo(routeHub.x, routeHub.y);
-    renderCtx.lineTo(routePoint.x, routePoint.y);
-    renderCtx.stroke();
-
-    renderCtx.fillStyle = isActive ? "#f4c96a" : "#8ec1e2";
-    renderCtx.beginPath();
-    renderCtx.arc(routePoint.x, routePoint.y, nodeRadius, 0, Math.PI * 2);
-    renderCtx.fill();
-
-    renderCtx.fillStyle = "#0f2235";
-    renderCtx.font = `${Math.max(9, Math.round(10 * BASE_CONSTANTS.GLOBAL_SCALE))}px monospace`;
-    renderCtx.textAlign = "left";
-    renderCtx.textBaseline = "middle";
-    renderCtx.fillText(`#${route.id}`, routePoint.x + nodeRadius + Math.max(4, Math.round(3 * BASE_CONSTANTS.GLOBAL_SCALE)), routePoint.y);
-  }
-
-  const detailsPanelX = layout.chartX + layout.chartWidth + panelPadding;
-  const detailsPanelWidth = layout.boxX + layout.boxWidth - detailsPanelX - panelPadding;
-  const detailsPanelY = layout.chartY;
-  const detailsPanelHeight = layout.chartHeight;
-  renderCtx.fillStyle = "rgba(11, 32, 57, 0.9)";
-  renderCtx.fillRect(detailsPanelX, detailsPanelY, detailsPanelWidth, detailsPanelHeight);
-  renderCtx.strokeStyle = "rgba(156, 204, 232, 0.45)";
-  renderCtx.strokeRect(detailsPanelX, detailsPanelY, detailsPanelWidth, detailsPanelHeight);
-
-  const lineX = detailsPanelX + Math.max(1, Math.round(10 * BASE_CONSTANTS.GLOBAL_SCALE));
-  let lineY = detailsPanelY + Math.max(1, Math.round(18 * BASE_CONSTANTS.GLOBAL_SCALE));
-  const lineGap = Math.max(1, Math.round(14 * BASE_CONSTANTS.GLOBAL_SCALE));
-
-  renderCtx.fillStyle = "#e5f5ff";
-  renderCtx.font = `${Math.max(10, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE))}px monospace`;
-  renderCtx.textAlign = "left";
-  renderCtx.textBaseline = "top";
-  renderCtx.fillText("Ocean Chart", lineX, lineY);
-  lineY += lineGap * 1.4;
-  renderCtx.fillText(`Habitat #${activeRoute.id}`, lineX, lineY);
-  lineY += lineGap;
-
-  const nameLines = splitTextForWidth(activeRoute.name, detailsPanelWidth - Math.max(1, Math.round(16 * BASE_CONSTANTS.GLOBAL_SCALE)));
-  for (const nameLine of nameLines.slice(0, 3)) {
-    renderCtx.fillText(nameLine, lineX, lineY);
-    lineY += lineGap;
-  }
-
-  const depthLine = activeRoute.depthZone ? `Depth: ${activeRoute.depthZone}` : "Depth: Unknown";
-  renderCtx.fillText(depthLine, lineX, lineY);
-  lineY += lineGap;
-
-  const substratumLabel = activeRoute.substratum.length > 0 ? activeRoute.substratum.join(", ") : "unspecified";
-  const substratumLines = splitTextForWidth(
-    `Substratum: ${substratumLabel}`,
-    detailsPanelWidth - Math.max(1, Math.round(16 * BASE_CONSTANTS.GLOBAL_SCALE)),
-  );
-  for (const substratumLine of substratumLines.slice(0, 3)) {
-    renderCtx.fillText(substratumLine, lineX, lineY);
-    lineY += lineGap;
-  }
-
-  lineY += lineGap * 0.6;
-  renderCtx.fillStyle = "#9fd2f2";
-  renderCtx.fillText("Click a route node to depart.", lineX, lineY);
-  lineY += lineGap;
-  renderCtx.fillText("Click outside chart to close.", lineX, lineY);
-}
-
-function splitTextForWidth(text: string, maxWidth: number): string[] {
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) {
-    return [""];
-  }
-
-  const lines: string[] = [];
-  let currentLine = words[0];
-  for (let index = 1; index < words.length; index += 1) {
-    const nextCandidate = `${currentLine} ${words[index]}`;
-    if (renderCtx.measureText(nextCandidate).width <= maxWidth) {
-      currentLine = nextCandidate;
+  for (const region of oceanHabitatRegionsByRouteId.values()) {
+    if (!travelDebugState.showHabitatRegionDebug) {
       continue;
     }
 
-    lines.push(currentLine);
-    currentLine = words[index];
+    drawOceanHabitatBlobPath(layout, region.circles);
+    renderCtx.fillStyle = region.debugColor;
+    renderCtx.globalAlpha = 0.33;
+    renderCtx.fill("evenodd");
+    renderCtx.globalAlpha = 1;
   }
 
-  lines.push(currentLine);
-  return lines;
+  renderCtx.fillStyle = "rgba(229, 195, 129, 0.98)";
+  renderCtx.strokeStyle = "rgba(255, 236, 193, 0.9)";
+  renderCtx.lineWidth = Math.max(1, BASE_CONSTANTS.GLOBAL_SCALE);
+  renderCtx.beginPath();
+  renderCtx.ellipse(
+    geometry.centerX,
+    geometry.centerY,
+    geometry.islandRadiusX,
+    geometry.islandRadiusY,
+    0,
+    0,
+    Math.PI * 2,
+  );
+  renderCtx.fill();
+  renderCtx.stroke();
+
+  renderCtx.fillStyle = "rgba(98, 148, 72, 0.9)";
+  renderCtx.beginPath();
+  renderCtx.ellipse(
+    geometry.centerX - geometry.islandRadiusX * 0.12,
+    geometry.centerY - geometry.islandRadiusY * 0.2,
+    geometry.islandRadiusX * 0.56,
+    geometry.islandRadiusY * 0.38,
+    0,
+    0,
+    Math.PI * 2,
+  );
+  renderCtx.fill();
+
+  renderCtx.fillStyle = "#e6f4ff";
+  renderCtx.font = `${Math.max(10, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE))}px monospace`;
+  renderCtx.textAlign = "left";
+  renderCtx.textBaseline = "top";
+  renderCtx.fillText("Uncharted waters", layout.boxX + Math.max(1, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE)), layout.boxY + Math.max(1, Math.round(10 * BASE_CONSTANTS.GLOBAL_SCALE)));
+
+  renderCtx.fillStyle = "rgba(214, 241, 255, 0.82)";
+  renderCtx.font = `${Math.max(9, Math.round(10 * BASE_CONSTANTS.GLOBAL_SCALE))}px monospace`;
+  renderCtx.fillText(
+    "Click the sea to depart",
+    layout.boxX + Math.max(1, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    layout.boxY + layout.boxHeight - Math.max(1, Math.round(18 * BASE_CONSTANTS.GLOBAL_SCALE)),
+  );
+
+  if (travelDebugState.showHabitatRegionDebug) {
+    const selectedRoute = getSelectedHabitatRoute();
+    const selectedDebugLabel = selectedRoute ? `#${selectedRoute.id} ${selectedRoute.name}` : "None";
+    renderCtx.fillStyle = "rgba(255, 231, 182, 0.92)";
+    renderCtx.fillText(
+      `DEBUG: hidden regions visible • selected habitat: ${selectedDebugLabel}`,
+      layout.boxX + Math.max(1, Math.round(12 * BASE_CONSTANTS.GLOBAL_SCALE)),
+      layout.boxY + layout.boxHeight - Math.max(1, Math.round(32 * BASE_CONSTANTS.GLOBAL_SCALE)),
+    );
+  }
 }
 
 function syncFishingStatusForActiveHabitat(): void {
@@ -912,6 +1088,5 @@ function syncFishingStatusForActiveHabitat(): void {
     return;
   }
 
-  const activeRoute = getActiveOceanHabitatRoute();
-  appState.fishing.session.statusText = `Route #${activeRoute.id}: ${activeRoute.name}. Click open water to cast.`;
+  appState.fishing.session.statusText = "Uncharted waters. Click open water to cast.";
 }
