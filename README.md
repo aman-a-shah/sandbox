@@ -2,6 +2,11 @@
 
 Welcome to **Tide & Till**, a cozy pixel-art simulation game where you manage a coastal life of fishing, cooking, and commerce. Built with a focus on high-fidelity pixel aesthetics and a warm, rustic user interface.
 
+**🔗 Devpost:** https://devpost.com/software/tide-and-till
+
+**🎥 Demo Video:** https://youtu.be/usHPEN28OWc
+
+
 ## 🎮 Game Overview
 
 In this sandbox experience, you play as a coastal entrepreneur. Explore the waters, catch rare fish, master the culinary arts through an extensive recipe book, and manage your growing economy.
