@@ -43,8 +43,8 @@ The project uses a dedicated color palette defined in `styles.css`:
 
 | Action | Key/Input |
 | :--- | :--- |
-| **Move NPC/Player** | Interactive Canvas |
-| **Open Inventory** | `B` or Toggle Button |
+| **Move NPC/Player** | W/A/S/D |
+| **Open Inventory** | `B` or Backpack Button |
 | **Open Recipe Book** | Interaction with Workstation |
 | **Return to Sea** | Navigation Button |
 | **Debug Menu** | Toggleable Overlay |
