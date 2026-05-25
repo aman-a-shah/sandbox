@@ -9,9 +9,8 @@ In this sandbox experience, you play as a coastal entrepreneur. Explore the wate
 ## 📸 Screenshots
 ![Gameplay Preview 1](./design-resources/screenshots/ss1.png)
 ![Gameplay Preview 2](./design-resources/screenshots/ss2.png)
-![Gameplay Preview 3](./design-resources/screenshots/ss3.png)
-![Gameplay Preview 4](./design-resources/screenshots/ss4.png)
 ![Gameplay Preview 5](./design-resources/screenshots/ss5.png)
+<img src="./design-resources/screenshots/ss3.png" width="49%" /> <img src="./design-resources/screenshots/ss4.png" width="49%" />
 
 ### Key Features
 
