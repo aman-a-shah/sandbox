@@ -157,8 +157,7 @@ body {
   top: 12px;
   left: 76px;
   z-index: 10;
-  margin: 0;
-  padding: 8px 12px;
+  padding: 8px 36px 8px 12px;
   max-width: min(760px, calc(100vw - 88px));
   background:
     linear-gradient(180deg, rgba(139, 81, 48, 0.96) 0%, rgba(95, 53, 40, 0.96) 100%);
@@ -173,6 +172,31 @@ body {
     inset 0 0 0 2px rgba(255, 226, 151, 0.22);
   transform: scale(var(--global-scale));
   transform-origin: top left;
+}
+
+.controls-overlay-text {
+  margin: 0;
+}
+
+.controls-overlay-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 226, 151, 0.32);
+  border-radius: 4px;
+  padding: 0;
+  color: #ffe9bf;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  background: rgba(44, 23, 17, 0.68);
+  cursor: pointer;
+}
+
+.controls-overlay-close:hover {
+  background: rgba(44, 23, 17, 0.88);
 }
 
 .workstation-prompt {

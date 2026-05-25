@@ -6,29 +6,101 @@
       "x": 70,
       "y": 55,
       "width": 190,
-      "height": 95
+      "height": 100
     },
     "outputWidth": 190,
-    "outputHeight": 95
+    "outputHeight": 100
   },
   {
     "id": "mist-fin-cod",
     "fileName": "mist-fin-cod.png",
     "crop": {
-      "x": 1000,
-      "y": 170,
+      "x": 1010,
+      "y": 185,
       "width": 180,
-      "height": 85
+      "height": 90
     },
     "outputWidth": 180,
-    "outputHeight": 85
+    "outputHeight": 90
   },
   {
     "id": "ember-tail-perch",
     "fileName": "ember-tail-perch.png",
     "crop": {
-      "x": 1225,
-      "y": 55,
+      "x": 1245,
+      "y": 50,
+      "width": 190,
+      "height": 110
+    },
+    "outputWidth": 190,
+    "outputHeight": 110
+  },
+  {
+    "id": "moon-reef-bream",
+    "fileName": "moon-reef-bream.png",
+    "crop": {
+      "x": 770,
+      "y": 300,
+      "width": 180,
+      "height": 100
+    },
+    "outputWidth": 180,
+    "outputHeight": 100
+  },
+  {
+    "id": "kelpback-bass",
+    "fileName": "kelpback-bass.png",
+    "crop": {
+      "x": 295,
+      "y": 290,
+      "width": 200,
+      "height": 110
+    },
+    "outputWidth": 200,
+    "outputHeight": 110
+  },
+  {
+    "id": "jade-raylet",
+    "fileName": "jade-raylet.png",
+    "crop": {
+      "x": 60,
+      "y": 520,
+      "width": 190,
+      "height": 115
+    },
+    "outputWidth": 190,
+    "outputHeight": 115
+  },
+  {
+    "id": "storm-glass-eel",
+    "fileName": "storm-glass-eel.png",
+    "crop": {
+      "x": 560,
+      "y": 650,
+      "width": 140,
+      "height": 100
+    },
+    "outputWidth": 140,
+    "outputHeight": 100
+  },
+  {
+    "id": "frost-gill-trout",
+    "fileName": "frost-gill-trout.png",
+    "crop": {
+      "x": 510,
+      "y": 540,
+      "width": 190,
+      "height": 90
+    },
+    "outputWidth": 190,
+    "outputHeight": 90
+  },
+  {
+    "id": "ruby-lantern-koi",
+    "fileName": "ruby-lantern-koi.png",
+    "crop": {
+      "x": 950,
+      "y": 530,
       "width": 190,
       "height": 100
     },
@@ -36,87 +108,15 @@
     "outputHeight": 100
   },
   {
-    "id": "moon-reef-bream",
-    "fileName": "moon-reef-bream.png",
-    "crop": {
-      "x": 770,
-      "y": 295,
-      "width": 180,
-      "height": 90
-    },
-    "outputWidth": 180,
-    "outputHeight": 90
-  },
-  {
-    "id": "kelpback-bass",
-    "fileName": "kelpback-bass.png",
-    "crop": {
-      "x": 295,
-      "y": 295,
-      "width": 190,
-      "height": 90
-    },
-    "outputWidth": 190,
-    "outputHeight": 90
-  },
-  {
-    "id": "jade-raylet",
-    "fileName": "jade-raylet.png",
-    "crop": {
-      "x": 60,
-      "y": 505,
-      "width": 190,
-      "height": 105
-    },
-    "outputWidth": 190,
-    "outputHeight": 105
-  },
-  {
-    "id": "storm-glass-eel",
-    "fileName": "storm-glass-eel.png",
-    "crop": {
-      "x": 565,
-      "y": 690,
-      "width": 125,
-      "height": 75
-    },
-    "outputWidth": 125,
-    "outputHeight": 75
-  },
-  {
-    "id": "frost-gill-trout",
-    "fileName": "frost-gill-trout.png",
-    "crop": {
-      "x": 555,
-      "y": 500,
-      "width": 190,
-      "height": 80
-    },
-    "outputWidth": 190,
-    "outputHeight": 80
-  },
-  {
-    "id": "ruby-lantern-koi",
-    "fileName": "ruby-lantern-koi.png",
-    "crop": {
-      "x": 1010,
-      "y": 505,
-      "width": 190,
-      "height": 80
-    },
-    "outputWidth": 190,
-    "outputHeight": 80
-  },
-  {
     "id": "crownfin-oracle",
     "fileName": "crownfin-oracle.png",
     "crop": {
       "x": 55,
-      "y": 670,
-      "width": 250,
-      "height": 80
+      "y": 650,
+      "width": 270,
+      "height": 100
     },
-    "outputWidth": 250,
-    "outputHeight": 80
+    "outputWidth": 270,
+    "outputHeight": 100
   }
 ]

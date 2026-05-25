@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fish Sprite Lab</title>
+  </head>
+  <body>
+    <main class="fish-lab" id="fish-lab-root">
+      <header class="fish-lab-header">
+        <div>
+          <p class="fish-lab-kicker">Sprite QA Tool</p>
+          <h1>Fish Sprite Lab</h1>
+          <p class="fish-lab-subtitle">
+            Edit <code>fish-sprite-crops.json</code> and <code>fish-sprite-manifest.json</code>, then reload to verify crops.
+          </p>
+        </div>
+        <div class="fish-lab-controls">
+          <button id="fish-lab-reload" type="button">Reload JSON</button>
+          <label class="fish-lab-checkbox">
+            <input id="fish-lab-auto-refresh" type="checkbox" checked />
+            Auto-refresh
+          </label>
+          <p id="fish-lab-updated-at" class="fish-lab-updated-at">Waiting for first load…</p>
+        </div>
+      </header>
+
+      <section id="fish-lab-summary" class="fish-lab-summary"></section>
+      <section id="fish-lab-errors" class="fish-lab-errors" aria-live="polite"></section>
+      <section class="fish-lab-sheet-panel">
+        <h2>Source Sheet Overlay</h2>
+        <p class="fish-lab-hint">
+          Solid lines show <code>fish-sprite-crops.json</code>; dashed lines show <code>fish-sprite-manifest.json</code>.
+        </p>
+        <div class="fish-lab-sheet-wrap">
+          <canvas id="fish-lab-sheet-canvas"></canvas>
+        </div>
+      </section>
+      <section id="fish-lab-cards" class="fish-lab-cards"></section>
+    </main>
+    <script type="module" src="/src/tools/fish-sprite-lab.ts"></script>
+  </body>
+</html>

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:fish-sprite-lab": "vite --open /fish-sprite-lab.html",
     "build:fish-sprites": "node scripts/build-fish-sprites.js",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",

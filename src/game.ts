@@ -275,6 +275,8 @@ const inventoryDetailsEl = mustGetElement<HTMLDivElement>("inventory-details");
 const inventoryCapacityEl = mustGetElement<HTMLElement>("inventory-capacity");
 const inventoryModeBannerEl = mustGetElement<HTMLElement>("inventory-mode-banner");
 const oceanReturnButtonEl = mustGetElement<HTMLButtonElement>("ocean-return-button");
+const controlsOverlayEl = mustGetElement<HTMLElement>("controls-overlay");
+const controlsOverlayCloseButtonEl = mustGetElement<HTMLButtonElement>("controls-overlay-close");
 
 const workstationPromptEl = mustGetElement<HTMLElement>("workstation-prompt");
 const craftToastEl = mustGetElement<HTMLElement>("craft-toast");
@@ -388,6 +390,7 @@ window.addEventListener("keydown", (event: KeyboardEvent) => {
   }
 
   const key = event.key.toLowerCase();
+  dismissControlsOverlay();
   appState.keysDown.add(key);
 
   if (key === "escape") {
@@ -429,6 +432,9 @@ window.addEventListener("keyup", (event: KeyboardEvent) => {
 });
 
 canvas.addEventListener("mousedown", (event: MouseEvent) => {
+  if (event.button === 0) {
+    dismissControlsOverlay();
+  }
   if (event.button === 0 && !appState.travel.isMapOpen) {
     appState.fishing.isReelHeld = true;
   }
@@ -446,15 +452,19 @@ window.addEventListener("blur", () => {
 });
 
 canvas.addEventListener("click", (event: MouseEvent) => {
+  dismissControlsOverlay();
   handleCanvasClick(event);
 });
 
 inventoryToggleButtonEl.addEventListener("click", () => {
+  dismissControlsOverlay();
   toggleInventory();
 });
 oceanReturnButtonEl.addEventListener("click", () => {
+  dismissControlsOverlay();
   returnToIslandFromOcean();
 });
+controlsOverlayCloseButtonEl.addEventListener("click", dismissControlsOverlay);
 
 inventoryCloseButtonEl.addEventListener("click", closeInventory);
 inventoryBagTabButtonEl.addEventListener("click", () => {
@@ -500,6 +510,10 @@ recipeBookNextButtonEl.addEventListener("click", () => {
 });
 
 requestAnimationFrame(gameLoop);
+
+function dismissControlsOverlay(): void {
+  controlsOverlayEl.classList.add("is-hidden");
+}
 
 function gameLoop(timestamp: number): void {
   const dt = Math.min((timestamp - appState.lastFrameTime) / 1000, 0.033);
